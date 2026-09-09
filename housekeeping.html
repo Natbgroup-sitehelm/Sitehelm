@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Housekeeping</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:#0f1f15; min-height:100vh; color:#fff; }
+
+  /* ── Header ── */
+  #header { background:linear-gradient(135deg,#1B4332,#2D6A4F); padding:14px 18px; display:flex; align-items:center; gap:12px; }
+  #header h1 { font-size:18px; font-weight:800; }
+  #header .sub { font-size:12px; color:#74c69d; margin-top:2px; }
+
+  /* ── Site selector mode (trolley) ── */
+  #site-selector { padding:16px; }
+  #site-search { width:100%; padding:12px 16px; border-radius:10px; border:1px solid #2D6A4F; background:#122819; color:#fff; font-size:16px; outline:none; margin-bottom:14px; }
+  #site-search::placeholder { color:#557a63; }
+  .site-group-head { font-size:10px; font-weight:800; color:#74c69d; text-transform:uppercase; letter-spacing:0.5px; padding:8px 4px 4px; }
+  .site-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); gap:8px; margin-bottom:12px; }
+  .site-tile { border-radius:10px; padding:12px 8px; text-align:center; cursor:pointer; border:2px solid transparent; transition:all 0.15s; }
+  .site-tile:active { transform:scale(0.94); }
+  .site-tile .tile-id { font-size:16px; font-weight:900; }
+  .site-tile .tile-status { font-size:10px; margin-top:3px; font-weight:600; }
+  /* Status colours */
+  .st-clean    { background:#0a2012; border-color:#4CAF5044; }
+  .st-dirty    { background:#3a1a00; border-color:#FF6B3544; }
+  .st-cleaning { background:#0d2240; border-color:#2196F344; }
+  .st-inspected{ background:#1a1000; border-color:#f9c74f44; }
+
+  /* ── Site detail mode ── */
+  #site-detail { display:none; padding:20px; }
+  #site-detail.show { display:block; }
+  #site-selector.hide { display:none; }
+
+  .detail-site-id { font-size:48px; font-weight:900; text-align:center; margin-bottom:4px; }
+  .detail-type { font-size:14px; color:#74c69d; text-align:center; margin-bottom:20px; }
+  .detail-status { text-align:center; padding:16px; border-radius:12px; margin-bottom:24px; }
+  .detail-status .status-icon { font-size:40px; margin-bottom:8px; }
+  .detail-status .status-label { font-size:18px; font-weight:800; }
+  .detail-status .status-time { font-size:12px; opacity:0.7; margin-top:4px; }
+
+  /* Big action buttons */
+  .action-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+  .action-btn { padding:20px 12px; border-radius:14px; border:none; font-size:15px; font-weight:800; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px; transition:all 0.15s; }
+  .action-btn:active { transform:scale(0.95); }
+  .action-btn .btn-icon { font-size:28px; }
+  .action-btn.active-action { box-shadow:0 0 0 3px #fff; }
+
+  /* Note input */
+  #note-wrap { margin-bottom:20px; }
+  #note-input { width:100%; padding:10px 14px; border-radius:8px; border:1px solid #2D6A4F; background:#122819; color:#fff; font-size:14px; outline:none; resize:none; }
+  #note-input::placeholder { color:#557a63; }
+
+  .back-btn { width:100%; padding:13px; border-radius:10px; border:1px solid #2D6A4F; background:transparent; color:#74c69d; font-size:14px; font-weight:700; cursor:pointer; }
+  .back-btn:hover { background:#1e3d28; }
+
+  /* Active booking banner */
+  .booking-banner { background:#1a1a00; border:1px solid #f9c74f44; border-radius:10px; padding:12px 14px; margin-bottom:16px; font-size:13px; color:#f9c74f; }
+
+  /* Success flash */
+  #flash { position:fixed; top:16px; left:50%; transform:translateX(-50%); background:#52B788; color:#fff; padding:12px 24px; border-radius:10px; font-weight:700; font-size:14px; z-index:1000; display:none; box-shadow:0 4px 20px rgba(0,0,0,0.4); }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <span style="font-size:28px">🧹</span>
+  <div>
+    <h1 id="header-title">Housekeeping</h1>
+    <div class="sub" id="header-sub">Loading…</div>
+  </div>
+</div>
+
+<div id="flash"></div>
+
+<!-- SITE SELECTOR (trolley mode) -->
+<div id="site-selector">
+  <div style="padding:14px 16px 0">
+    <input id="site-search" placeholder="Search site ID…" oninput="filterSites()">
+  </div>
+  <div id="site-list" style="padding:0 16px 20px"></div>
+</div>
+
+<!-- SITE DETAIL -->
+<div id="site-detail">
+  <div class="detail-site-id" id="detail-id">P1</div>
+  <div class="detail-type" id="detail-type">Powered Site</div>
+
+  <!-- Active booking if any -->
+  <div id="detail-booking" style="display:none" class="booking-banner"></div>
+
+  <!-- Current status -->
+  <div class="detail-status" id="detail-status-card">
+    <div class="status-icon" id="detail-status-icon">✅</div>
+    <div class="status-label" id="detail-status-label">Clean & Ready</div>
+    <div class="status-time" id="detail-status-time"></div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="action-grid">
+    <button class="action-btn" style="background:#3a1a00;color:#FF6B35" onclick="updateStatus('dirty')">
+      <span class="btn-icon">🟠</span>Needs Cleaning
+    </button>
+    <button class="action-btn" style="background:#0d2240;color:#2196F3" onclick="updateStatus('cleaning')">
+      <span class="btn-icon">🧹</span>Start Cleaning
+    </button>
+    <button class="action-btn" style="background:#1a1000;color:#f9c74f" onclick="updateStatus('inspected')">
+      <span class="btn-icon">🔍</span>Mark Inspected
+    </button>
+    <button class="action-btn" style="background:#0a2012;color:#4CAF50" onclick="updateStatus('clean')">
+      <span class="btn-icon">✅</span>Clean & Ready
+    </button>
+  </div>
+
+  <!-- Report maintenance issue -->
+  <div style="margin:16px 0 0">
+    <button onclick="toggleMaintenanceForm()" style="width:100%;padding:14px;background:#2a1000;border:1px solid #c05a00;border-radius:12px;color:#f97316;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      🔧 Report a Maintenance Issue
+    </button>
+  </div>
+
+  <!-- Maintenance report form (hidden by default) -->
+  <div id="maint-form" style="display:none;margin-top:12px;background:#1a0f00;border:1px solid #c05a00;border-radius:12px;padding:16px">
+    <div style="font-size:14px;font-weight:700;color:#f97316;margin-bottom:12px">🔧 Report Issue</div>
+    <select id="mf-category" style="width:100%;padding:12px;border:1px solid #c05a00;border-radius:8px;background:#0f0800;color:#e8f0e9;font-size:14px;outline:none;margin-bottom:10px">
+      <option value="plumbing">🚿 Plumbing</option>
+      <option value="electrical">⚡ Electrical</option>
+      <option value="appliance">🔌 Appliance</option>
+      <option value="structural">🏗️ Structural</option>
+      <option value="grounds">🌿 Grounds</option>
+      <option value="cleaning">🧹 Cleaning supply</option>
+      <option value="safety">⚠️ Safety</option>
+      <option value="other">🔧 Other</option>
+    </select>
+    <select id="mf-priority" style="width:100%;padding:12px;border:1px solid #c05a00;border-radius:8px;background:#0f0800;color:#e8f0e9;font-size:14px;outline:none;margin-bottom:10px">
+      <option value="urgent">🔴 Urgent — needs immediate attention</option>
+      <option value="high">🟠 High — fix today</option>
+      <option value="normal" selected>🟡 Normal — fix soon</option>
+      <option value="low">🟢 Low — when convenient</option>
+    </select>
+    <textarea id="mf-description" rows="3" placeholder="Describe the issue — e.g. Shower 3 head cracked, water spraying sideways…"
+      style="width:100%;padding:12px;border:1px solid #c05a00;border-radius:8px;background:#0f0800;color:#e8f0e9;font-size:14px;outline:none;resize:none;font-family:inherit;margin-bottom:10px;box-sizing:border-box"></textarea>
+    <input type="text" id="mf-reporter" placeholder="Your name (optional)"
+      style="width:100%;padding:12px;border:1px solid #c05a00;border-radius:8px;background:#0f0800;color:#e8f0e9;font-size:14px;outline:none;margin-bottom:12px;box-sizing:border-box">
+    <button onclick="submitHKMaintenanceJob()" style="width:100%;padding:14px;background:#c05a00;border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:700;cursor:pointer">
+      Submit Report
+    </button>
+  </div>
+
+  <!-- Optional note -->
+  <div id="note-wrap">
+    <textarea id="note-input" rows="2" placeholder="Add a note (optional)…"></textarea>
+  </div>
+
+  <button class="back-btn" onclick="goBack()">← Back to All Sites</button>
+</div>
+
+<script>
+// ── Shared localStorage keys ──────────────────────────────────────────────────
+const HK_KEY    = 'hk_status';
+const HK_LOG    = 'hk_log';
+const SITES_KEY = 'custom_sites';
+const PARKS_KEY = 'parks';
+const BOOKINGS_KEY = 'bookings_data'; // we'll read from main app bookings
+
+const HK_STATUSES = {
+  clean:     { label:'Clean & Ready',  icon:'✅', color:'#4CAF50', bg:'#0a2012' },
+  dirty:     { label:'Needs Cleaning', icon:'🟠', color:'#FF6B35', bg:'#3a1a00' },
+  cleaning:  { label:'Being Cleaned',  icon:'🧹', color:'#2196F3', bg:'#0d2240' },
+  inspected: { label:'Awaiting Inspection',icon:'🔍',color:'#f9c74f',bg:'#1a1000'},
+};
+
+const TYPE_META = {
+  powered:   { icon:'⚡', label:'Powered'   },
+  unpowered: { icon:'🌿', label:'Unpowered' },
+  cabin:     { icon:'🏠', label:'Cabin'     },
+  ensuite:   { icon:'🚿', label:'Ensuite'   },
+  villa:     { icon:'🏡', label:'Villa'     },
+  glamping:  { icon:'⛺', label:'Glamping'  },
+  overflow:  { icon:'🅿️', label:'Overflow'  },
+};
+
+const TYPE_ORDER = ['powered','ensuite','unpowered','cabin','villa','glamping','overflow'];
+
+// ── Load data ─────────────────────────────────────────────────────────────────
+function loadHkStatus() { return JSON.parse(localStorage.getItem(HK_KEY) || '{}'); }
+
+function loadSites() {
+  const stored = localStorage.getItem(SITES_KEY);
+  if (stored) {
+    try { return JSON.parse(stored); } catch(e) {}
+  }
+  return [];
+}
+
+function loadParkName() {
+  try {
+    const parks = JSON.parse(localStorage.getItem(PARKS_KEY) || '[]');
+    const activeId = localStorage.getItem('activeParkId');
+    const park = parks.find(p=>p.id===activeId) || parks[0];
+    return park?.name || 'Park';
+  } catch(e) { return 'Park'; }
+}
+
+function getSiteStatus(siteId) {
+  const hk = loadHkStatus();
+  return hk[siteId]?.status || 'clean';
+}
+
+function naturalSort(a, b) {
+  const re = /(\d+)/g;
+  const ap = a.id.split(re), bp = b.id.split(re);
+  for (let i=0; i<Math.max(ap.length,bp.length); i++) {
+    const an=parseInt(ap[i]||''), bn=parseInt(bp[i]||'');
+    if (!isNaN(an)&&!isNaN(bn)&&an!==bn) return an-bn;
+    if ((ap[i]||'')!==(bp[i]||'')) return (ap[i]||'').localeCompare(bp[i]||'');
+  }
+  return 0;
+}
+
+// ── Detect if opened via QR (site param in URL) ───────────────────────────────
+const urlParams = new URLSearchParams(window.location.search);
+const qrSiteId  = urlParams.get('site');
+
+let currentSiteId = null;
+let sites = loadSites(); // mutable so new sites can be added live
+const parkName = loadParkName();
+
+// Update header
+document.getElementById('header-sub').textContent = parkName;
+
+if (qrSiteId) {
+  // Direct to that site
+  openSite(qrSiteId);
+} else {
+  // Show all sites (trolley mode)
+  renderSiteList();
+}
+
+// ── Site list (trolley mode) ──────────────────────────────────────────────────
+function renderSiteList(filter='') {
+  const el = document.getElementById('site-list');
+  if (!el) return;
+
+  const filtered = sites.filter(s =>
+    !filter || s.id.toLowerCase().includes(filter) || s.label.toLowerCase().includes(filter)
+  );
+
+  if (!filtered.length) {
+    el.innerHTML = '<div style="color:#557a63;text-align:center;padding:32px;font-size:13px">No sites found</div>';
+    return;
+  }
+
+  // Group by type
+  const grouped = {};
+  TYPE_ORDER.forEach(t => grouped[t] = []);
+  filtered.forEach(s => { if(grouped[s.type]) grouped[s.type].push(s); else grouped[s.type]=[s]; });
+
+  el.innerHTML = Object.entries(grouped).map(([type, typeSites]) => {
+    if (!typeSites.length) return '';
+    const tm = TYPE_META[type] || { icon:'•', label:type };
+    typeSites.sort(naturalSort);
+    return `<div class="site-group-head">${tm.icon} ${tm.label}</div>
+      <div class="site-grid">
+        ${typeSites.map(site => {
+          const st = getSiteStatus(site.id);
+          const hs = HK_STATUSES[st];
+          return `<div class="site-tile st-${st}" onclick="openSite('${site.id}')">
+            <div class="tile-id" style="color:${hs.color}">${site.label||site.id}</div>
+            <div class="tile-status" style="color:${hs.color}">${hs.icon} ${st==='clean'?'Ready':st==='dirty'?'Dirty':st==='cleaning'?'Cleaning':'Inspect'}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }).join('');
+}
+
+function filterSites() {
+  const q = document.getElementById('site-search')?.value.toLowerCase() || '';
+  renderSiteList(q);
+}
+
+// ── Site detail ───────────────────────────────────────────────────────────────
+function openSite(siteId) {
+  currentSiteId = siteId;
+  const site = sites.find(s=>s.id===siteId);
+  const tm = TYPE_META[site?.type] || { icon:'🏕️', label: site?.type||'Site' };
+  const st = getSiteStatus(siteId);
+  const hs = HK_STATUSES[st];
+  const hkData = JSON.parse(localStorage.getItem(HK_KEY)||'{}')[siteId];
+
+  document.getElementById('detail-id').textContent = site?.label || siteId;
+  document.getElementById('detail-type').textContent = `${tm.icon} ${tm.label} · A$${site?.price||0}/night`;
+  document.getElementById('detail-id').style.color = hs.color;
+
+  // Status card
+  const card = document.getElementById('detail-status-card');
+  card.style.background = hs.bg;
+  card.style.border = `1px solid ${hs.color}44`;
+  document.getElementById('detail-status-icon').textContent  = hs.icon;
+  document.getElementById('detail-status-label').textContent = hs.label;
+  document.getElementById('detail-status-label').style.color = hs.color;
+
+  const timeEl = document.getElementById('detail-status-time');
+  if (hkData?.updatedAt) {
+    timeEl.textContent = 'Last updated: ' + new Date(hkData.updatedAt).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  } else {
+    timeEl.textContent = 'No updates recorded';
+  }
+
+  // Clear note
+  const noteEl = document.getElementById('note-input');
+  if (noteEl) noteEl.value = '';
+
+  // Check for active booking
+  const today = new Date().toISOString().split('T')[0];
+  const bookings = JSON.parse(localStorage.getItem('bookings_cache') || '[]');
+  const activeBooking = bookings.find(b =>
+    b.siteId === siteId && b.status !== 'cancelled' && today >= b.checkIn && today < b.checkOut
+  );
+  const bookingEl = document.getElementById('detail-booking');
+  if (activeBooking && bookingEl) {
+    bookingEl.style.display = 'block';
+    bookingEl.innerHTML = `⚠️ Active booking: <strong>${activeBooking.guest}</strong> · Departs ${activeBooking.checkOut}`;
+  } else if (bookingEl) {
+    bookingEl.style.display = 'none';
+  }
+
+  // Show detail, hide selector
+  document.getElementById('site-detail').classList.add('show');
+  document.getElementById('site-selector').classList.add('hide');
+
+  // Update page title
+  document.title = `${site?.label||siteId} — Housekeeping`;
+  document.getElementById('header-title').textContent = `Site ${site?.label||siteId}`;
+}
+
+function updateStatus(newStatus) {
+  if (!currentSiteId) return;
+  const note = document.getElementById('note-input')?.value.trim() || '';
+  const hs = HK_STATUSES[newStatus];
+
+  // Read, update, write hk_status
+  const hkData = JSON.parse(localStorage.getItem(HK_KEY) || '{}');
+  const prev = hkData[currentSiteId]?.status || 'clean';
+  hkData[currentSiteId] = { status:newStatus, updatedAt:new Date().toISOString(), note };
+  localStorage.setItem(HK_KEY, JSON.stringify(hkData));
+
+  // Write to hk_log
+  const log = JSON.parse(localStorage.getItem(HK_LOG) || '[]');
+  log.unshift({ siteId:currentSiteId, status:newStatus, prev, note, ts:new Date().toISOString(), park:parkName });
+  localStorage.setItem(HK_LOG, JSON.stringify(log.slice(0,200)));
+
+  // Flash confirmation
+  flash(`${hs.icon} ${currentSiteId} — ${hs.label}`);
+
+  // Refresh detail view
+  openSite(currentSiteId);
+
+  // Auto go back after marking clean/inspected
+  if (newStatus === 'clean' || newStatus === 'inspected') {
+    setTimeout(() => goBack(), 1500);
+  }
+}
+
+function goBack() {
+  currentSiteId = null;
+  document.getElementById('site-detail').classList.remove('show');
+  document.getElementById('site-selector').classList.remove('hide');
+  document.getElementById('header-title').textContent = 'Housekeeping';
+  document.title = 'Housekeeping';
+  renderSiteList(document.getElementById('site-search')?.value.toLowerCase()||'');
+}
+
+function flash(msg) {
+  const el = document.getElementById('flash');
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 2500);
+}
+
+// Listen for changes from main app
+window.addEventListener('storage', e => {
+  if (e.key === HK_KEY && currentSiteId) openSite(currentSiteId);
+  if (e.key === HK_KEY && !currentSiteId) renderSiteList();
+  // If new sites are added in the main app, reload the site list
+  if (e.key === 'custom_sites') {
+    const fresh = loadSites();
+    // Merge any new sites
+    fresh.forEach(s => { if (!sites.find(x=>x.id===s.id)) sites.push(s); });
+    // Remove deleted sites
+    for (let i=sites.length-1; i>=0; i--) {
+      if (!fresh.find(x=>x.id===sites[i].id)) sites.splice(i,1);
+    }
+    if (!currentSiteId) renderSiteList();
+  }
+});
+// ── Maintenance reporting from HK page ───────────────────────────────────────
+function toggleMaintenanceForm() {
+  const el = document.getElementById('maint-form');
+  if (el) el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
+
+function submitHKMaintenanceJob() {
+  const desc = document.getElementById('mf-description')?.value.trim();
+  if (!desc) { alert('Please describe the issue'); return; }
+
+  // Get location from current site/facility context
+  const params   = new URLSearchParams(window.location.search);
+  const siteId   = params.get('site') || '';
+  const facId    = params.get('facility') || '';
+  const location = siteId || facId || 'Unknown location';
+
+  const job = {
+    id:          'MJ' + Date.now(),
+    location,
+    locationType: facId ? 'facility' : 'site',
+    category:    document.getElementById('mf-category')?.value || 'other',
+    priority:    document.getElementById('mf-priority')?.value || 'normal',
+    description: desc,
+    reportedBy:  document.getElementById('mf-reporter')?.value.trim() || 'Housekeeping staff',
+    assignedTo:  '',
+    status:      'open',
+    createdAt:   new Date().toISOString(),
+    updatedAt:   new Date().toISOString(),
+    resolutionNotes: '',
+  };
+
+  try {
+    const jobs = JSON.parse(localStorage.getItem('sitehelm_maintenance')||'[]');
+    jobs.unshift(job);
+    localStorage.setItem('sitehelm_maintenance', JSON.stringify(jobs));
+  } catch(e) {}
+
+  // Show success
+  const form = document.getElementById('maint-form');
+  if (form) form.innerHTML = `<div style="text-align:center;padding:20px">
+    <div style="font-size:40px;margin-bottom:8px">✅</div>
+    <div style="font-size:16px;font-weight:700;color:#4CAF50">Issue Reported!</div>
+    <div style="font-size:13px;color:#74c69d;margin-top:6px">The manager has been notified</div>
+  </div>`;
+}
+
+</script>
+</body>
+</html>

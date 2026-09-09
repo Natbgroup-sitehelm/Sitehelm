@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Staff Clock On / Off</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(160deg, #0f1f15 0%, #1B4332 50%, #0f1f15 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    padding: 20px;
+  }
+
+  /* ── Park logo / name ── */
+  #park-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  #park-logo { font-size: 48px; margin-bottom: 6px; }
+  #park-name { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+  #park-sub  { font-size: 13px; color: #74c69d; margin-top: 3px; }
+
+  /* ── Clock display ── */
+  #clock-display {
+    font-size: 48px;
+    font-weight: 800;
+    color: #52B788;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+  #date-display {
+    font-size: 14px;
+    color: #74c69d;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  /* ── Card ── */
+  #card {
+    background: rgba(18, 40, 25, 0.92);
+    border: 1px solid #2D6A4F;
+    border-radius: 20px;
+    padding: 28px 28px 24px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+  }
+
+  /* ── Staff name display ── */
+  #staff-prompt {
+    text-align: center;
+    font-size: 14px;
+    color: #74c69d;
+    margin-bottom: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-height: 20px;
+  }
+
+  /* ── PIN dots ── */
+  #pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .pin-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid #2D6A4F;
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .pin-dot.filled {
+    background: #52B788;
+    border-color: #52B788;
+    transform: scale(1.1);
+  }
+
+  /* ── PIN pad ── */
+  #pin-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .pin-btn {
+    background: #0f1f15;
+    border: 1px solid #2D6A4F;
+    border-radius: 12px;
+    color: #fff;
+    font-size: 22px;
+    font-weight: 700;
+    padding: 18px 0;
+    cursor: pointer;
+    transition: all 0.1s;
+    user-select: none;
+    -webkit-user-select: none;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .pin-btn:hover  { background: #1B4332; border-color: #52B788; }
+  .pin-btn:active { transform: scale(0.94); background: #2D6A4F; }
+  .pin-btn.wide   { grid-column: span 2; }
+  .pin-btn.del    { font-size: 18px; color: #74c69d; }
+
+  /* ── Action button ── */
+  #action-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    font-size: 17px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: none;
+    letter-spacing: 0.3px;
+  }
+  #action-btn.show { display: block; }
+  #action-btn.clockon  { background: #52B788; color: #0f1f15; }
+  #action-btn.clockoff { background: #f9c74f; color: #1a1a1a; }
+  #action-btn:active { transform: scale(0.97); }
+
+  /* ── Result panel ── */
+  #result-panel {
+    display: none;
+    text-align: center;
+    padding: 8px 0;
+  }
+  #result-panel.show { display: block; }
+  #result-icon  { font-size: 56px; margin-bottom: 12px; }
+  #result-name  { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 6px; }
+  #result-msg   { font-size: 15px; color: #74c69d; margin-bottom: 4px; line-height: 1.5; }
+  #result-time  { font-size: 13px; color: #557a63; }
+  #result-back  {
+    margin-top: 20px;
+    padding: 12px 32px;
+    border-radius: 10px;
+    border: 1px solid #2D6A4F;
+    background: transparent;
+    color: #74c69d;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #result-back:hover { background: #1B4332; }
+
+  /* ── Error message ── */
+  #error-msg {
+    text-align: center;
+    color: #ef9a9a;
+    font-size: 13px;
+    min-height: 18px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  /* ── Currently on shift ── */
+  #shift-bar {
+    text-align: center;
+    font-size: 11px;
+    color: #557a63;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #1e3d28;
+    line-height: 1.6;
+  }
+  #shift-bar strong { color: #74c69d; }
+
+  /* ── Ripple effect ── */
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(82,183,136,0.3);
+    transform: scale(0);
+    animation: ripple-anim 0.4s linear;
+    pointer-events: none;
+  }
+  @keyframes ripple-anim {
+    to { transform: scale(4); opacity: 0; }
+  }
+
+  /* ── Success animation ── */
+  @keyframes pop-in {
+    0%   { transform: scale(0.5); opacity: 0; }
+    70%  { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  #result-icon.animate { animation: pop-in 0.4s ease forwards; }
+
+  /* Tablet/landscape adjustments */
+  @media (min-width: 500px) {
+    #card { padding: 36px 36px 30px; max-width: 400px; }
+    .pin-btn { font-size: 26px; padding: 22px 0; }
+    #clock-display { font-size: 56px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="park-header">
+  <div id="park-logo">🌿</div>
+  <div id="park-name">Billabong Breeze</div>
+  <div id="park-sub">Staff Clock On / Off</div>
+</div>
+
+<div id="clock-display">00:00:00</div>
+<div id="date-display">Loading…</div>
+
+<div id="card">
+
+  <!-- Normal PIN entry view -->
+  <div id="pin-view">
+    <div id="staff-prompt">Enter your PIN</div>
+    <div id="pin-dots">
+      <div class="pin-dot" id="dot-0"></div>
+      <div class="pin-dot" id="dot-1"></div>
+      <div class="pin-dot" id="dot-2"></div>
+      <div class="pin-dot" id="dot-3"></div>
+    </div>
+    <div id="error-msg"></div>
+    <div id="pin-pad">
+      <button class="pin-btn" onclick="pressPin('1')">1</button>
+      <button class="pin-btn" onclick="pressPin('2')">2</button>
+      <button class="pin-btn" onclick="pressPin('3')">3</button>
+      <button class="pin-btn" onclick="pressPin('4')">4</button>
+      <button class="pin-btn" onclick="pressPin('5')">5</button>
+      <button class="pin-btn" onclick="pressPin('6')">6</button>
+      <button class="pin-btn" onclick="pressPin('7')">7</button>
+      <button class="pin-btn" onclick="pressPin('8')">8</button>
+      <button class="pin-btn" onclick="pressPin('9')">9</button>
+      <button class="pin-btn wide" onclick="pressPin('0')">0</button>
+      <button class="pin-btn del" onclick="deletePin()">⌫</button>
+    </div>
+    <button id="action-btn" onclick="submitPin()">Clock On</button>
+    <div id="shift-bar" id="shift-bar"></div>
+  </div>
+
+  <!-- Result view (shown after successful clock on/off) -->
+  <div id="result-panel">
+    <div id="result-icon">✅</div>
+    <div id="result-name"></div>
+    <div id="result-msg"></div>
+    <div id="result-time"></div>
+    <button id="result-back" onclick="resetToPin()">← Back</button>
+  </div>
+
+</div>
+
+<script>
+// ── Shared localStorage keys (same as main app) ───────────────────────────────
+const STAFF_KEY     = 'staff_members';
+const CLOCK_LOG_KEY = 'clock_log';
+
+function loadStaff()    { return JSON.parse(localStorage.getItem(STAFF_KEY)    || '[]'); }
+function loadClockLog() { return JSON.parse(localStorage.getItem(CLOCK_LOG_KEY)|| '[]'); }
+function saveClockLog(log) { localStorage.setItem(CLOCK_LOG_KEY, JSON.stringify(log.slice(0, 500))); }
+
+// ── Load park name from storage ───────────────────────────────────────────────
+function loadParkName() {
+  try {
+    const parks = JSON.parse(localStorage.getItem('parks') || '[]');
+    const activeId = localStorage.getItem('activeParkId');
+    const park = parks.find(p => p.id === activeId) || parks[0];
+    if (park) {
+      document.getElementById('park-name').textContent = park.name;
+      document.title = park.name + ' — Staff Clock On/Off';
+    }
+  } catch(e) {}
+}
+
+// ── Live clock ────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now  = new Date();
+  const time = now.toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+  const date = now.toLocaleDateString('en-AU',  { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  document.getElementById('clock-display').textContent = time;
+  document.getElementById('date-display').textContent  = date;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── PIN state ─────────────────────────────────────────────────────────────────
+let currentPin    = '';
+let matchedStaff  = null;
+
+function pressPin(digit) {
+  if (currentPin.length >= 4) return;
+  currentPin += digit;
+  updateDots();
+  clearError();
+
+  // Ripple effect on button
+  const btn = event.currentTarget;
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  const size = Math.max(btn.offsetWidth, btn.offsetHeight);
+  ripple.style.cssText = `width:${size}px;height:${size}px;left:${event.offsetX-size/2}px;top:${event.offsetY-size/2}px`;
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 400);
+
+  // Auto-check when 4 digits entered
+  if (currentPin.length === 4) {
+    setTimeout(() => checkPin(), 100);
+  }
+}
+
+function deletePin() {
+  if (!currentPin.length) return;
+  currentPin = currentPin.slice(0, -1);
+  updateDots();
+  clearError();
+  matchedStaff = null;
+  document.getElementById('staff-prompt').textContent = 'Enter your PIN';
+  document.getElementById('action-btn').className = 'action-btn';
+  document.getElementById('action-btn').style.display = 'none';
+}
+
+function updateDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('dot-' + i);
+    dot.classList.toggle('filled', i < currentPin.length);
+  }
+}
+
+function clearError() {
+  document.getElementById('error-msg').textContent = '';
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  // Shake animation
+  el.style.animation = 'none';
+  el.offsetHeight; // reflow
+  el.style.animation = 'shake 0.4s ease';
+}
+
+// ── Check PIN against staff list ──────────────────────────────────────────────
+function checkPin() {
+  const staff = loadStaff();
+  const match = staff.find(s => s.pin === currentPin && s.active);
+
+  if (!match) {
+    showError('PIN not recognised — please try again');
+    // Clear after brief pause
+    setTimeout(() => {
+      currentPin = '';
+      updateDots();
+      clearError();
+      matchedStaff = null;
+      document.getElementById('staff-prompt').textContent = 'Enter your PIN';
+      document.getElementById('action-btn').style.display = 'none';
+    }, 1200);
+    return;
+  }
+
+  matchedStaff = match;
+  document.getElementById('staff-prompt').textContent = `Hi ${match.name.split(' ')[0]}! 👋`;
+
+  // Determine if clocking on or off
+  const log = loadClockLog();
+  const lastEntry = [...log].reverse().find(l => l.staffId === match.id);
+  const isClockedOn = lastEntry?.type === 'on';
+
+  const btn = document.getElementById('action-btn');
+  btn.style.display = 'block';
+  if (isClockedOn) {
+    btn.className = 'action-btn clockoff show';
+    btn.textContent = `Clock Off — ${match.name.split(' ')[0]}`;
+  } else {
+    btn.className = 'action-btn clockon show';
+    btn.textContent = `Clock On — ${match.name.split(' ')[0]}`;
+  }
+}
+
+// ── Submit clock on/off ───────────────────────────────────────────────────────
+function submitPin() {
+  if (!matchedStaff) return;
+
+  const log = loadClockLog();
+  const lastEntry = [...log].reverse().find(l => l.staffId === matchedStaff.id);
+  const isClockedOn = lastEntry?.type === 'on';
+  const type = isClockedOn ? 'off' : 'on';
+  const now  = new Date();
+
+  // Get active park name
+  let parkName = 'Park';
+  try {
+    const parks = JSON.parse(localStorage.getItem('parks') || '[]');
+    const activeId = localStorage.getItem('activeParkId');
+    const park = parks.find(p => p.id === activeId) || parks[0];
+    if (park) parkName = park.name;
+  } catch(e) {}
+
+  const entry = {
+    staffId: matchedStaff.id,
+    name:    matchedStaff.name,
+    type,
+    ts:      now.toISOString(),
+    park:    parkName,
+  };
+  log.push(entry);
+  saveClockLog(log);
+
+  // Show result
+  showResult(matchedStaff, type, now, isClockedOn ? lastEntry : null);
+}
+
+// ── Show result screen ────────────────────────────────────────────────────────
+function showResult(staff, type, now, previousEntry) {
+  document.getElementById('pin-view').style.display    = 'none';
+  const result = document.getElementById('result-panel');
+  result.classList.add('show');
+
+  const timeStr = now.toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', hour12:true });
+
+  if (type === 'on') {
+    document.getElementById('result-icon').textContent  = '✅';
+    document.getElementById('result-name').textContent  = `Welcome, ${staff.name.split(' ')[0]}!`;
+    document.getElementById('result-msg').textContent   = `You're clocked ON for your shift.`;
+    document.getElementById('result-time').textContent  = `Started at ${timeStr}`;
+  } else {
+    // Calculate shift duration
+    let durationStr = '';
+    if (previousEntry?.ts) {
+      const hrs = (now - new Date(previousEntry.ts)) / 3600000;
+      const h   = Math.floor(hrs);
+      const m   = Math.round((hrs - h) * 60);
+      durationStr = `Shift duration: ${h}h ${String(m).padStart(2,'0')}m`;
+    }
+    document.getElementById('result-icon').textContent  = '👋';
+    document.getElementById('result-name').textContent  = `See you, ${staff.name.split(' ')[0]}!`;
+    document.getElementById('result-msg').textContent   = `You're clocked OFF. Have a great rest!`;
+    document.getElementById('result-time').textContent  = `${durationStr ? durationStr + ' · ' : ''}Clocked off at ${timeStr}`;
+  }
+
+  // Animate icon
+  const icon = document.getElementById('result-icon');
+  icon.classList.remove('animate');
+  void icon.offsetWidth;
+  icon.classList.add('animate');
+
+  // Auto-reset after 5 seconds
+  setTimeout(() => resetToPin(), 5000);
+}
+
+// ── Reset back to PIN entry ───────────────────────────────────────────────────
+function resetToPin() {
+  currentPin   = '';
+  matchedStaff = null;
+  updateDots();
+  clearError();
+  document.getElementById('staff-prompt').textContent    = 'Enter your PIN';
+  document.getElementById('action-btn').style.display   = 'none';
+  document.getElementById('pin-view').style.display     = 'block';
+  const result = document.getElementById('result-panel');
+  result.classList.remove('show');
+  renderShiftBar();
+}
+
+// ── Shift bar — shows who is currently clocked on ────────────────────────────
+function renderShiftBar() {
+  const log   = loadClockLog();
+  const staff = loadStaff();
+
+  // Find staff currently clocked on
+  const onShift = staff.filter(s => {
+    const last = [...log].reverse().find(l => l.staffId === s.id);
+    return last?.type === 'on';
+  });
+
+  const el = document.getElementById('shift-bar');
+  if (!el) return;
+
+  if (!onShift.length) {
+    el.innerHTML = '<span>No staff currently clocked on</span>';
+  } else {
+    el.innerHTML = '<strong>Currently on shift:</strong> ' + onShift.map(s => s.name.split(' ')[0]).join(', ');
+  }
+}
+
+// ── Keyboard support ──────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key >= '0' && e.key <= '9') pressPin(e.key);
+  if (e.key === 'Backspace') deletePin();
+  if (e.key === 'Enter' && matchedStaff) submitPin();
+});
+
+// ── Shake CSS ─────────────────────────────────────────────────────────────────
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = `
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }`;
+document.head.appendChild(shakeStyle);
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadParkName();
+renderShiftBar();
+// Refresh shift bar every 30 seconds
+setInterval(renderShiftBar, 30000);
+</script>
+
+</body>
+</html>

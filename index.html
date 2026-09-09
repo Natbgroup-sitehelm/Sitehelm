@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SiteHelm — Built for Australian Caravan Parks</title>
+<meta name="description" content="SiteHelm is the complete management system for Australian caravan and holiday parks. Live satellite map, bookings, housekeeping, staff, ANPR and more.">
+<meta property="og:title" content="SiteHelm — Built for Australian Caravan Parks">
+<meta property="og:description" content="The complete park management system. Live satellite map, online bookings, housekeeping, ANPR vehicle recognition and more.">
+<meta property="og:image" content="sitehelm-hero.png">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #fff; color: #1a2e24; line-height: 1.6; }
+
+/* ── Nav ── */
+nav { position: sticky; top: 0; z-index: 100; background: rgba(27,67,50,0.97); backdrop-filter: blur(12px); padding: 14px 40px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-logo-text { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.3px; }
+.nav-logo-text span { color: #52B788; }
+.nav-links { display: flex; gap: 28px; list-style: none; }
+.nav-links a { color: #a7d4bc; text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.15s; }
+.nav-links a:hover { color: #fff; }
+.nav-cta { background: #52B788; color: #0f2018; padding: 9px 22px; border-radius: 7px; font-size: 14px; font-weight: 700; text-decoration: none; transition: all 0.15s; white-space: nowrap; }
+.nav-cta:hover { background: #3d9970; transform: translateY(-1px); }
+
+/* ── Hero ── */
+.hero { width: 100%; position: relative; overflow: hidden; }
+.hero img { width: 100%; display: block; max-height: 85vh; object-fit: cover; object-position: center top; }
+.hero-cta-bar { background: linear-gradient(to right, #1B4332, #2D6A4F); padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.hero-cta-text { color: #fff; font-size: 17px; font-weight: 700; }
+.hero-cta-sub { color: #a7d4bc; font-size: 13px; font-weight: 400; margin-top: 2px; }
+.cta-btn-lg { background: #52B788; color: #0f2018; padding: 14px 32px; border-radius: 9px; font-size: 16px; font-weight: 800; text-decoration: none; display: inline-block; transition: all 0.15s; white-space: nowrap; }
+.cta-btn-lg:hover { background: #3d9970; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(82,183,136,0.4); }
+
+/* ── Sections ── */
+section { padding: 72px 40px; max-width: 1100px; margin: 0 auto; }
+.section-tag { font-size: 12px; font-weight: 700; color: #1B4332; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+h2 { font-size: 32px; font-weight: 800; color: #1a2e24; line-height: 1.2; margin-bottom: 10px; letter-spacing: -0.3px; }
+.section-sub { font-size: 16px; color: #557a63; line-height: 1.7; max-width: 580px; margin-bottom: 48px; }
+
+/* ── Feature grid ── */
+.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.feature-card { background: #f8fdf9; border: 1px solid #d4eddf; border-radius: 14px; padding: 26px 22px; transition: all 0.2s; }
+.feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(27,67,50,0.1); border-color: #52B788; }
+.f-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 14px; }
+.f-title { font-size: 16px; font-weight: 800; color: #1a2e24; margin-bottom: 6px; }
+.f-desc { font-size: 13px; color: #557a63; line-height: 1.7; }
+
+/* ── Stats strip ── */
+.stats-strip { background: linear-gradient(135deg, #1B4332, #2D6A4F); padding: 48px 40px; }
+.stats-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.stat-box { text-align: center; padding: 8px; border-right: 1px solid rgba(255,255,255,0.1); }
+.stat-box:last-child { border-right: none; }
+.stat-num { font-size: 36px; font-weight: 900; color: #52B788; margin-bottom: 6px; }
+.stat-label { font-size: 13px; color: #a7d4bc; line-height: 1.5; }
+
+/* ── How it works ── */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; counter-reset: step; }
+.step { position: relative; padding: 24px 18px; background: #f8fdf9; border: 1px solid #d4eddf; border-radius: 14px; counter-increment: step; }
+.step::before { content: counter(step); position: absolute; top: -14px; left: 20px; background: #1B4332; color: #fff; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; }
+.step-icon { font-size: 28px; margin-bottom: 12px; }
+.step-title { font-size: 14px; font-weight: 800; color: #1a2e24; margin-bottom: 6px; }
+.step-desc { font-size: 12px; color: #557a63; line-height: 1.6; }
+
+/* ── ANPR teaser ── */
+.anpr-section { background: linear-gradient(135deg, #0f1f15, #1B4332); padding: 64px 40px; }
+.anpr-inner { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.anpr-badge { display: inline-block; background: #f97316; color: #fff; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+.anpr-title { font-size: 26px; font-weight: 800; color: #fff; margin-bottom: 12px; line-height: 1.3; }
+.anpr-desc { font-size: 14px; color: #a7d4bc; line-height: 1.8; margin-bottom: 24px; }
+.anpr-points { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.anpr-points li { font-size: 13px; color: #74c69d; display: flex; align-items: flex-start; gap: 8px; }
+.anpr-points li::before { content: '✓'; font-weight: 800; color: #52B788; flex-shrink: 0; margin-top: 1px; }
+.anpr-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 24px; }
+.anpr-stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.anpr-stat { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 14px 10px; text-align: center; }
+.anpr-stat-num { font-size: 24px; font-weight: 900; color: #52B788; }
+.anpr-stat-lbl { font-size: 10px; color: #74c69d; margin-top: 3px; }
+.anpr-log-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
+.anpr-log-row:last-child { border-bottom: none; }
+.plate { font-family: monospace; font-weight: 700; font-size: 13px; }
+.badge-known { background: #d4eddf; color: #1B4332; border-radius: 20px; padding: 2px 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.badge-unknown { background: #fff3cd; color: #856404; border-radius: 20px; padding: 2px 10px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+
+/* ── Pricing ── */
+.pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.price-card { background: #f8fdf9; border: 1px solid #d4eddf; border-radius: 14px; padding: 24px 20px; text-align: center; transition: all 0.2s; }
+.price-card.featured { border-color: #1B4332; border-width: 2px; background: #fff; position: relative; }
+.featured-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #1B4332; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 14px; border-radius: 20px; white-space: nowrap; }
+.price-tier { font-size: 12px; font-weight: 700; color: #557a63; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.price-amount { font-size: 36px; font-weight: 900; color: #1B4332; line-height: 1; }
+.price-period { font-size: 13px; color: #557a63; margin-bottom: 6px; }
+.price-sites { font-size: 12px; color: #557a63; padding-bottom: 16px; border-bottom: 1px solid #d4eddf; margin-bottom: 16px; }
+.price-features { list-style: none; text-align: left; display: flex; flex-direction: column; gap: 8px; }
+.price-features li { font-size: 12px; color: #374151; display: flex; align-items: flex-start; gap: 6px; }
+.price-features li::before { content: '✓'; color: #52B788; font-weight: 800; flex-shrink: 0; }
+.price-cta { display: block; margin-top: 20px; padding: 11px; border-radius: 8px; font-size: 13px; font-weight: 700; text-decoration: none; text-align: center; background: #1B4332; color: #fff; transition: all 0.15s; }
+.price-cta:hover { background: #145c3c; }
+
+/* ── Testimonial ── */
+.testimonials { background: #f4f7f5; padding: 64px 40px; }
+.test-inner { max-width: 1100px; margin: 0 auto; }
+.test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 40px; }
+.test-card { background: #fff; border-radius: 14px; padding: 24px; border: 1px solid #d4eddf; }
+.test-stars { color: #f9c74f; font-size: 16px; margin-bottom: 12px; }
+.test-quote { font-size: 14px; color: #374151; line-height: 1.7; margin-bottom: 16px; font-style: italic; }
+.test-author { font-size: 13px; font-weight: 700; color: #1B4332; }
+.test-park { font-size: 12px; color: #557a63; }
+
+/* ── FAQ ── */
+.faq-list { display: flex; flex-direction: column; gap: 12px; max-width: 720px; }
+.faq-item { background: #f8fdf9; border: 1px solid #d4eddf; border-radius: 10px; overflow: hidden; }
+.faq-q { padding: 16px 20px; font-size: 14px; font-weight: 700; color: #1a2e24; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.faq-q:hover { background: #edf7f1; }
+.faq-a { padding: 0 20px 16px; font-size: 13px; color: #557a63; line-height: 1.7; display: none; }
+.faq-item.open .faq-a { display: block; }
+.faq-item.open .faq-arrow { transform: rotate(180deg); }
+.faq-arrow { transition: transform 0.2s; font-size: 12px; color: #557a63; }
+
+/* ── CTA footer ── */
+.cta-section { background: linear-gradient(135deg, #1B4332, #2D6A4F); padding: 80px 40px; text-align: center; }
+.cta-section h2 { color: #fff; font-size: 34px; margin-bottom: 12px; }
+.cta-section p { color: #a7d4bc; font-size: 16px; margin-bottom: 32px; }
+.cta-pair { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.btn-white { background: #fff; color: #1B4332; padding: 14px 32px; border-radius: 9px; font-size: 16px; font-weight: 800; text-decoration: none; transition: all 0.15s; }
+.btn-white:hover { background: #f0f9f4; transform: translateY(-2px); }
+.btn-ghost { background: transparent; color: #fff; padding: 14px 32px; border-radius: 9px; font-size: 16px; font-weight: 600; text-decoration: none; border: 2px solid rgba(255,255,255,0.3); transition: all 0.15s; }
+.btn-ghost:hover { border-color: rgba(255,255,255,0.6); }
+
+/* ── Footer ── */
+footer { background: #0f1f15; padding: 40px; }
+.footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.footer-logo { font-size: 20px; font-weight: 800; color: #fff; }
+.footer-logo span { color: #52B788; }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a { color: #557a63; text-decoration: none; font-size: 13px; transition: color 0.15s; }
+.footer-links a:hover { color: #74c69d; }
+.footer-copy { font-size: 12px; color: #374151; text-align: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid #1e3d28; max-width: 1100px; margin: 24px auto 0; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  nav { padding: 12px 20px; }
+  .nav-links { display: none; }
+  section { padding: 48px 20px; }
+  h2 { font-size: 26px; }
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .steps { grid-template-columns: repeat(2, 1fr); }
+  .pricing-grid { grid-template-columns: repeat(2, 1fr); }
+  .stats-inner { grid-template-columns: repeat(2, 1fr); }
+  .anpr-inner { grid-template-columns: 1fr; }
+  .test-grid { grid-template-columns: 1fr; }
+  .hero-cta-bar { flex-direction: column; text-align: center; padding: 20px; }
+}
+@media (max-width: 600px) {
+  .features-grid { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .stats-inner { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <span style="font-size:26px">🌿</span>
+    <span class="nav-logo-text">Site<span>Helm</span></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#anpr">ANPR</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+    <li><a href="#faq">FAQ</a></li>
+  </ul>
+  <a href="#demo" class="nav-cta">Book a Free Demo</a>
+</nav>
+
+<!-- HERO IMAGE -->
+<div class="hero">
+  <img src="sitehelm-hero.png" alt="SiteHelm — Park management system showing live satellite map, online booking, housekeeping board, rate calendar and ANPR vehicle recognition">
+  <div class="hero-cta-bar">
+    <div>
+      <div class="hero-cta-text">Ready to take the helm of your park?</div>
+      <div class="hero-cta-sub">No setup fees · No lock-in · Month to month · Australian support</div>
+    </div>
+    <a href="#demo" class="cta-btn-lg">Book Your Free Demo →</a>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-tag">Everything you need</div>
+  <h2>Built for the way parks actually work</h2>
+  <p class="section-sub">Not adapted from a hotel system. Not a generic booking tool. SiteHelm was designed from the ground up for Australian caravan and holiday parks.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="f-icon" style="background:#d4eddf">🗺️</div>
+      <div class="f-title">Live Satellite Map</div>
+      <div class="f-desc">Every site on satellite imagery with real-time colour-coded status. Hover any marker to see guest details, payment status, and quick action buttons.</div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon" style="background:#e8f4ff">📅</div>
+      <div class="f-title">Availability Grid</div>
+      <div class="f-desc">42-day Gantt view of every site. Occupancy percentage per day, drag-and-drop booking moves, click any empty cell to instantly start a new booking.</div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon" style="background:#fff3cd">💰</div>
+      <div class="f-title">Seasonal Rate Calendar</div>
+      <div class="f-desc">Set peak, shoulder, and weekend rates on a visual calendar. The right price applies automatically to every booking — no human error, no missed revenue.</div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon" style="background:#f3e8ff">🧹</div>
+      <div class="f-title">Housekeeping System</div>
+      <div class="f-desc">QR codes on every site post. Staff scan and update status from their phone. See live cleaning progress on the map from anywhere. Trolley tablet view included.</div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon" style="background:#fee2e2">📡</div>
+      <div class="f-title">Automated Guest Journey</div>
+      <div class="f-desc">Six automated touchpoints per guest — booking confirmation, pre-arrival, welcome SMS, farewell, review request, and return offers. Set once, runs forever.</div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon" style="background:#d4eddf">🌐</div>
+      <div class="f-title">Online Booking Page</div>
+      <div class="f-desc">A mobile-friendly booking page embeds on your website with one line of code. Guests choose dates, site type, and pay. Bookings appear in your system instantly.</div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon" style="background:#e8f4ff">👥</div>
+      <div class="f-title">Staff Management</div>
+      <div class="f-desc">Staff clock on and off via QR code and PIN. Hours tracked automatically. Weekly reports. Wall-mounted terminal with no app download required.</div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon" style="background:#fef3c7">🚶</div>
+      <div class="f-title">Movements Board</div>
+      <div class="f-desc">Arrivals, departures, in-house guests, overdue bookings — all in one screen. Filter, sort, search, export to CSV, or print a reception report.</div>
+    </div>
+    <div class="feature-card">
+      <div class="f-icon" style="background:#d4eddf">🔗</div>
+      <div class="f-title">GoHighLevel Integration</div>
+      <div class="f-desc">Every booking, check-in, and check-out fires a webhook to GHL automatically. Create contacts, trigger SMS sequences, and manage reviews without lifting a finger.</div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-strip">
+  <div class="stats-inner">
+    <div class="stat-box">
+      <div class="stat-num">42</div>
+      <div class="stat-label">Day availability view at a glance</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">30s</div>
+      <div class="stat-label">Walk-in booking time with Quick Book</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">6</div>
+      <div class="stat-label">Automated guest touchpoints per stay</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">Australian made and supported</div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="section-tag">Simple to get started</div>
+  <h2>Up and running the same day</h2>
+  <p class="section-sub">No IT department. No weeks of setup. No server to maintain. SiteHelm is four files — open the main one in Chrome and you're live.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-icon">📁</div>
+      <div class="step-title">Receive your files</div>
+      <div class="step-desc">Four HTML files arrive in your inbox. Put them in a folder on your desktop. That's your entire system — nothing to install.</div>
+    </div>
+    <div class="step">
+      <div class="step-icon">🗺️</div>
+      <div class="step-title">Set up your park</div>
+      <div class="step-desc">Drag site markers onto the satellite map. Add your site types and nightly prices. 45-minute onboarding call with your dedicated contact.</div>
+    </div>
+    <div class="step">
+      <div class="step-icon">📋</div>
+      <div class="step-title">Add your first booking</div>
+      <div class="step-desc">Take your first booking live. The system immediately shows it on the map, in the availability grid, and on the dashboard.</div>
+    </div>
+    <div class="step">
+      <div class="step-icon">🚀</div>
+      <div class="step-title">Go live online</div>
+      <div class="step-desc">Embed the guest booking page on your website. Connect to GoHighLevel. Print QR codes for your sites. You're fully operational.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ANPR -->
+<div class="anpr-section" id="anpr">
+  <div class="anpr-inner">
+    <div>
+      <div class="anpr-badge">Coming Soon</div>
+      <div class="anpr-title">ANPR Vehicle Recognition — a first for Australian caravan parks</div>
+      <div class="anpr-desc">A camera at your park entrance reads every number plate automatically. SiteHelm matches it to a guest booking in under a second. Unknown vehicles trigger an instant SMS alert to your phone.</div>
+      <ul class="anpr-points">
+        <li>Every vehicle entry and exit logged automatically with timestamp</li>
+        <li>Plates matched to active bookings in under 1 second</li>
+        <li>SMS alert to manager for unknown vehicles within 30 seconds</li>
+        <li>Works day and night — IR cameras included in recommended setup</li>
+        <li>No other affordable park system in Australia offers this</li>
+      </ul>
+      <div style="margin-top:24px">
+        <a href="#demo" style="background:#52B788;color:#0f2018;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;display:inline-block">Register Your Interest →</a>
+      </div>
+    </div>
+    <div>
+      <div class="anpr-card">
+        <div style="font-size:13px;font-weight:700;color:#74c69d;margin-bottom:12px">🚗 Vehicle Log — Today</div>
+        <div class="anpr-stat-row">
+          <div class="anpr-stat">
+            <div class="anpr-stat-num">47</div>
+            <div class="anpr-stat-lbl">Known vehicles</div>
+          </div>
+          <div class="anpr-stat">
+            <div class="anpr-stat-num" style="color:#f97316">2</div>
+            <div class="anpr-stat-lbl">Unknown alerts</div>
+          </div>
+          <div class="anpr-stat">
+            <div class="anpr-stat-num">98%</div>
+            <div class="anpr-stat-lbl">Accuracy rate</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#557a63;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;font-weight:700">Recent entries</div>
+        <div class="anpr-log-row">
+          <span style="font-size:10px;color:#557a63;min-width:40px">2:47pm</span>
+          <span class="plate" style="color:#52B788">1ABC 234</span>
+          <span style="color:#74c69d;font-size:12px;flex:1">Thompson · P3</span>
+          <span class="badge-known">✅ Known</span>
+        </div>
+        <div class="anpr-log-row">
+          <span style="font-size:10px;color:#557a63;min-width:40px">3:12pm</span>
+          <span class="plate" style="color:#f97316">9XYZ 789</span>
+          <span style="color:#74c69d;font-size:12px;flex:1">No match</span>
+          <span class="badge-unknown">⚠️ Alert sent</span>
+        </div>
+        <div class="anpr-log-row">
+          <span style="font-size:10px;color:#557a63;min-width:40px">4:05pm</span>
+          <span class="plate" style="color:#52B788">2DEF 456</span>
+          <span style="color:#74c69d;font-size:12px;flex:1">Johnson · C2</span>
+          <span class="badge-known">✅ Known</span>
+        </div>
+        <div class="anpr-log-row">
+          <span style="font-size:10px;color:#557a63;min-width:40px">5:30pm</span>
+          <span class="plate" style="color:#52B788">1ABC 234</span>
+          <span style="color:#74c69d;font-size:12px;flex:1">Thompson · Exiting</span>
+          <span class="badge-known">🚗 Exit</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="section-tag">Simple pricing</div>
+  <h2>No setup fees. No surprises.</h2>
+  <p class="section-sub">Month to month — if SiteHelm isn't making your life easier within 60 days, cancel and owe us nothing.</p>
+
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-tier">Starter</div>
+      <div class="price-amount">$79</div>
+      <div class="price-period">/month</div>
+      <div class="price-sites">Up to 30 sites</div>
+      <ul class="price-features">
+        <li>Live satellite map</li>
+        <li>Full booking system</li>
+        <li>Availability grid</li>
+        <li>Housekeeping QR codes</li>
+        <li>Staff clock on/off</li>
+        <li>Guest communications</li>
+        <li>Online booking page</li>
+        <li>GHL integration</li>
+        <li>Daily backup</li>
+      </ul>
+      <a href="#demo" class="price-cta">Get Started</a>
+    </div>
+    <div class="price-card featured">
+      <div class="featured-badge">Most Popular</div>
+      <div class="price-tier">Growth</div>
+      <div class="price-amount">$149</div>
+      <div class="price-period">/month</div>
+      <div class="price-sites">31 – 100 sites</div>
+      <ul class="price-features">
+        <li>Everything in Starter</li>
+        <li>Rate calendar</li>
+        <li>Quick Book mode</li>
+        <li>Revenue dashboard</li>
+        <li>Digital arrival guide</li>
+        <li>Waitlist management</li>
+        <li>Booking confirmation PDF</li>
+        <li>Priority support</li>
+      </ul>
+      <a href="#demo" class="price-cta">Get Started</a>
+    </div>
+    <div class="price-card">
+      <div class="price-tier">Multi-Park</div>
+      <div class="price-amount">$299</div>
+      <div class="price-period">/month</div>
+      <div class="price-sites">Unlimited sites &amp; parks</div>
+      <ul class="price-features">
+        <li>Everything in Growth</li>
+        <li>Multiple park management</li>
+        <li>Cross-park reporting</li>
+        <li>Shared staff database</li>
+        <li>White-label option</li>
+        <li>Dedicated account manager</li>
+      </ul>
+      <a href="#demo" class="price-cta">Get Started</a>
+    </div>
+    <div class="price-card" style="background:#fff8f5;border-color:#f97316">
+      <div class="price-tier" style="color:#f97316">ANPR Add-On</div>
+      <div class="price-amount" style="color:#f97316">+$79</div>
+      <div class="price-period">/month</div>
+      <div class="price-sites">Any plan · Coming soon</div>
+      <ul class="price-features">
+        <li>Automatic plate reading</li>
+        <li>Booking matching</li>
+        <li>Unknown vehicle SMS alerts</li>
+        <li>Vehicle entry/exit log</li>
+        <li>Camera setup included</li>
+        <li>Hardware partner referral</li>
+      </ul>
+      <a href="#demo" class="price-cta" style="background:#f97316">Register Interest</a>
+    </div>
+  </div>
+
+  <div style="margin-top:24px;background:#f0f9f4;border-radius:10px;padding:16px 20px;border:1px solid #d4eddf;font-size:13px;color:#374151;text-align:center">
+    💡 <strong>The maths:</strong> SiteHelm Starter costs $79/month — that's 2.5 powered site nights at $32/night. Fill those two and a half nights through the online booking page alone and you're ahead from month one.
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<div class="testimonials">
+  <div class="test-inner">
+    <div class="section-tag">From park operators</div>
+    <h2>Built with people who run parks</h2>
+    <div class="test-grid">
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <div class="test-quote">"The satellite map changed everything for us. I can see at a glance exactly what's happening across all 60 sites without leaving the office. The hover cards with guest details are something I didn't know I needed until I had it."</div>
+        <div class="test-author">Regional Park Manager</div>
+        <div class="test-park">60-site holiday park, QLD</div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <div class="test-quote">"We were running everything on a spreadsheet and a whiteboard. Getting up and running on SiteHelm took less than an hour. Within the first week we had three online bookings come in while we were sleeping. That's never happened before."</div>
+        <div class="test-author">Owner-Operator</div>
+        <div class="test-park">28-site family park, WA</div>
+      </div>
+      <div class="test-card">
+        <div class="test-stars">★★★★★</div>
+        <div class="test-quote">"The housekeeping QR codes have been a game changer for our cleaning staff. They scan the post, tap Clean and Ready, and I can see it update on the map from the office. No more 'is that site done yet?' calls on the radio."</div>
+        <div class="test-author">Park Manager</div>
+        <div class="test-park">45-site coastal park, NSW</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="section-tag">Common questions</div>
+  <h2>Frequently asked</h2>
+  <p class="section-sub" style="margin-bottom:32px">Everything you need to know before getting started.</p>
+
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Do I need to install anything? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">No installation required. SiteHelm is four HTML files. Put them in a folder on your computer and open the main one in Chrome. No server, no IT department, no app store download.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How long does setup take? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">Most parks are operational within the same day. We schedule a 45-minute onboarding call where we set up your sites on the map, configure your pricing, add your staff, and do a test booking together. By the end of the call you're live.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What happens to my data if I cancel? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">Your data is stored in your browser's local storage — it stays on your machine. You can export a full backup at any time from the Backup tab. If you cancel, your data goes with you. We recommend taking a backup before cancelling.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Can I use SiteHelm on multiple devices? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">Yes — using the built-in backup and restore system to move data between computers. For real-time multi-device sync, we're rolling out cloud database support shortly. Contact us to be on the early access list.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Do guests need to download an app to book? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">No. The guest booking page is a standard web page that works on any phone, tablet, or computer. Guests just visit your URL, pick their dates, choose a site, and pay. No app, no account, no friction.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How does the ANPR vehicle recognition work? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">A camera at your entrance captures vehicle plates on motion trigger. The image is sent to a cloud AI service that reads the plate text in under 500ms. SiteHelm matches it against your active bookings and logs the entry. Unknown vehicles trigger an instant SMS to your phone. We recommend Hikvision cameras and partner with local security installers for the hardware setup.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Is Australian support available? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">Yes — all support is handled directly by the SiteHelm team in Australia. Not a call centre, not a ticketing system. For the first 90 days after onboarding you have direct access to your account manager's number.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What if I'm not tech savvy? <span class="faq-arrow">▾</span></div>
+      <div class="faq-a">SiteHelm was designed for park operators, not IT professionals. We provide a full 16-section printed user manual, a personal onboarding session, and ongoing direct support. If you can use a website, you can use SiteHelm.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section" id="demo">
+  <h2>Ready to take the helm?</h2>
+  <p>Book a free 30-minute demo and see SiteHelm running on a real park. No commitment, no pressure — just a look at what your park could become.</p>
+  <div class="cta-pair">
+    <a href="mailto:hello@sitehelm.com.au?subject=Demo Request" class="btn-white">Book a Free Demo</a>
+    <a href="mailto:hello@sitehelm.com.au" class="btn-ghost">Send Us a Message</a>
+  </div>
+  <div style="margin-top:24px;font-size:13px;color:#74c69d">
+    No setup fees · No lock-in · Cancel any time · Australian support
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">🌿 Site<span>Helm</span></div>
+    <div class="footer-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#anpr">ANPR</a>
+      <a href="#faq">FAQ</a>
+      <a href="mailto:hello@sitehelm.com.au">Contact</a>
+    </div>
+  </div>
+  <div class="footer-copy">
+    © 2026 SiteHelm · Built for Australian Caravan Parks · sitehelm.com.au · Made in Western Australia
+  </div>
+</footer>
+
+<script>
+function toggleFaq(el) {
+  const item = el.parentElement;
+  const wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!wasOpen) item.classList.add('open');
+}
+
+// Smooth nav highlighting
+const sections = document.querySelectorAll('section[id], div[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 100) current = s.getAttribute('id');
+  });
+  navLinks.forEach(a => {
+    a.style.color = a.getAttribute('href') === '#' + current ? '#fff' : '';
+  });
+});
+</script>
+
+</body>
+</html>

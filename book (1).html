@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book Your Stay — Billabong Breeze</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Segoe UI',system-ui,sans-serif; background:#f4f7f5; color:#1a2e24; min-height:100vh; }
+
+/* ── Header ── */
+#hdr { background:linear-gradient(135deg,#1B4332 0%,#2D6A4F 100%); color:#fff; padding:20px 24px; text-align:center; }
+#hdr h1 { font-size:24px; font-weight:900; letter-spacing:-0.3px; }
+#hdr p  { font-size:13px; color:#a7d4bc; margin-top:4px; }
+
+/* ── Progress bar ── */
+#progress { display:flex; align-items:center; justify-content:center; gap:0; padding:16px 20px; background:#fff; border-bottom:1px solid #e0e8e4; }
+.prog-step { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#a0b8ac; transition:color 0.2s; }
+.prog-step.active  { color:#1B4332; }
+.prog-step.done    { color:#52B788; }
+.prog-dot  { width:24px; height:24px; border-radius:50%; border:2px solid #c8ddd4; background:#fff;
+             display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800;
+             transition:all 0.2s; flex-shrink:0; }
+.prog-step.active .prog-dot  { border-color:#1B4332; color:#1B4332; }
+.prog-step.done   .prog-dot  { border-color:#52B788; background:#52B788; color:#fff; }
+.prog-line { width:32px; height:2px; background:#e0e8e4; margin:0 4px; flex-shrink:0; }
+.prog-line.done { background:#52B788; }
+
+/* ── Main container ── */
+#main { max-width:680px; margin:0 auto; padding:20px 16px 40px; }
+
+/* ── Cards / sections ── */
+.card { background:#fff; border-radius:14px; padding:24px; margin-bottom:16px;
+        box-shadow:0 2px 12px rgba(0,0,0,0.06); border:1px solid #e8efe8; }
+.card h2 { font-size:17px; font-weight:800; color:#1B4332; margin-bottom:4px; }
+.card .sub { font-size:12px; color:#6b8f79; margin-bottom:18px; }
+
+/* ── Date picker section ── */
+.date-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.date-box  { display:flex; flex-direction:column; gap:4px; }
+.date-box label { font-size:11px; font-weight:700; color:#4a7a5a; text-transform:uppercase; letter-spacing:0.4px; }
+.date-box input { padding:10px 12px; border:2px solid #c8ddd4; border-radius:8px; font-size:15px; color:#1a2e24;
+                  outline:none; font-family:inherit; transition:border-color 0.15s; background:#fff; }
+.date-box input:focus { border-color:#1B4332; }
+.nights-pill { display:inline-flex; align-items:center; gap:6px; background:#e8f5ee; color:#1B4332;
+               border-radius:20px; padding:6px 14px; font-size:13px; font-weight:700; margin-top:10px; }
+
+/* ── Site type cards ── */
+.type-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+.type-card { border:2px solid #e0e8e4; border-radius:12px; padding:14px 12px; cursor:pointer;
+             text-align:center; transition:all 0.15s; background:#fff; position:relative; }
+.type-card:hover   { border-color:#2D6A4F; transform:translateY(-1px); box-shadow:0 4px 12px rgba(27,67,50,0.12); }
+.type-card.selected{ border-color:#1B4332; background:#f0f9f4; box-shadow:0 4px 12px rgba(27,67,50,0.15); }
+.type-card.unavail { opacity:0.45; cursor:not-allowed; }
+.type-icon  { font-size:30px; margin-bottom:6px; }
+.type-name  { font-size:13px; font-weight:800; color:#1a2e24; }
+.type-price { font-size:12px; color:#4a7a5a; margin-top:2px; }
+.type-count { font-size:10px; color:#6b8f79; margin-top:2px; }
+.type-badge { position:absolute; top:8px; right:8px; background:#1B4332; color:#fff;
+              border-radius:20px; padding:1px 7px; font-size:9px; font-weight:700; }
+
+/* ── Site selector (optional specific site) ── */
+.site-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:8px; margin-top:4px; }
+.site-btn  { border:2px solid #c8ddd4; border-radius:8px; padding:8px 4px; text-align:center;
+             cursor:pointer; font-size:13px; font-weight:700; color:#1a2e24; background:#fff;
+             transition:all 0.15s; }
+.site-btn:hover    { border-color:#2D6A4F; }
+.site-btn.selected { border-color:#1B4332; background:#f0f9f4; color:#1B4332; }
+.site-btn.taken    { background:#fef2f2; border-color:#fecaca; color:#ef4444; cursor:not-allowed;
+                     text-decoration:line-through; opacity:0.6; }
+.any-site-btn { width:100%; padding:10px; border:2px dashed #c8ddd4; border-radius:8px;
+                font-size:13px; font-weight:600; color:#4a7a5a; cursor:pointer; background:#f9fafb;
+                transition:all 0.15s; margin-bottom:10px; text-align:center; }
+.any-site-btn:hover    { border-color:#2D6A4F; background:#f0f9f4; }
+.any-site-btn.selected { border-color:#1B4332; background:#f0f9f4; color:#1B4332; font-weight:700; }
+
+/* ── Form fields ── */
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:500px) { .form-grid { grid-template-columns:1fr; } .date-row { grid-template-columns:1fr; } }
+.field { display:flex; flex-direction:column; gap:5px; }
+.field.full { grid-column:1/-1; }
+.field label { font-size:11px; font-weight:700; color:#4a7a5a; text-transform:uppercase; letter-spacing:0.4px; }
+.field input, .field select, .field textarea {
+  padding:10px 12px; border:2px solid #c8ddd4; border-radius:8px; font-size:14px;
+  color:#1a2e24; outline:none; font-family:inherit; background:#fff; transition:border-color 0.15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color:#1B4332; }
+.field textarea { resize:vertical; min-height:70px; }
+.req { color:#ef4444; }
+
+/* ── Payment choice ── */
+.pay-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.pay-card { border:2px solid #e0e8e4; border-radius:12px; padding:16px 14px; cursor:pointer; transition:all 0.15s; }
+.pay-card:hover { border-color:#2D6A4F; }
+.pay-card.selected { border-color:#1B4332; background:#f0f9f4; }
+.pay-card h4 { font-size:14px; font-weight:800; color:#1a2e24; margin-bottom:4px; }
+.pay-card p  { font-size:12px; color:#6b8f79; line-height:1.5; }
+.pay-amount  { font-size:20px; font-weight:900; color:#1B4332; margin-top:8px; }
+
+/* ── Summary box ── */
+.summary-box { background:#f0f9f4; border-radius:10px; padding:14px 16px; margin-bottom:16px; border:1px solid #c8ddd4; }
+.summary-row { display:flex; justify-content:space-between; align-items:center; padding:4px 0;
+               font-size:13px; color:#4a7a5a; }
+.summary-row.total { border-top:1px solid #c8ddd4; margin-top:6px; padding-top:10px;
+                     font-size:16px; font-weight:800; color:#1a2e24; }
+.summary-row.due   { color:#1B4332; font-weight:700; }
+
+/* ── Buttons ── */
+.btn-primary { width:100%; padding:15px; border-radius:10px; border:none; background:#1B4332; color:#fff;
+               font-size:16px; font-weight:800; cursor:pointer; transition:all 0.15s; margin-top:8px; letter-spacing:0.2px; }
+.btn-primary:hover { background:#145c3c; transform:translateY(-1px); box-shadow:0 4px 16px rgba(27,67,50,0.3); }
+.btn-primary:active { transform:none; }
+.btn-primary:disabled { background:#a0b8ac; cursor:not-allowed; transform:none; box-shadow:none; }
+.btn-back { background:none; border:none; color:#4a7a5a; font-size:13px; font-weight:600; cursor:pointer;
+            padding:8px 0; display:flex; align-items:center; gap:5px; margin-bottom:12px; }
+.btn-back:hover { color:#1B4332; }
+
+/* ── Trust badges ── */
+.trust-row { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-top:16px; }
+.trust-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#6b8f79; }
+
+/* ── Error / validation ── */
+.err-msg { color:#ef4444; font-size:12px; margin-top:4px; display:none; }
+.field.error input, .field.error select { border-color:#ef4444; }
+.field.error .err-msg { display:block; }
+
+/* ── Confirmation screen ── */
+#confirm-screen { display:none; }
+#confirm-screen.show { display:block; }
+.confirm-icon { font-size:64px; text-align:center; margin-bottom:12px; }
+.confirm-id   { display:inline-block; background:#1B4332; color:#fff; border-radius:8px;
+                padding:6px 16px; font-family:monospace; font-size:18px; font-weight:800; }
+
+/* ── Availability indicator ── */
+.avail-bar { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.avail-pip { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+/* ── Spinner ── */
+.spinner { display:inline-block; width:18px; height:18px; border:3px solid rgba(255,255,255,0.3);
+           border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:6px; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Steps visibility */
+.step { display:none; }
+.step.active { display:block; }
+</style>
+</head>
+<body>
+
+<div id="hdr">
+  <div style="font-size:32px;margin-bottom:6px">🌿</div>
+  <h1 id="park-name-hdr">Billabong Breeze</h1>
+  <p id="park-sub-hdr">Mundaring, WA · Book your stay online</p>
+</div>
+
+<!-- Progress -->
+<div id="progress">
+  <div class="prog-step active" id="ps1"><div class="prog-dot">1</div><span>Dates</span></div>
+  <div class="prog-line" id="pl1"></div>
+  <div class="prog-step" id="ps2"><div class="prog-dot">2</div><span>Site</span></div>
+  <div class="prog-line" id="pl2"></div>
+  <div class="prog-step" id="ps3"><div class="prog-dot">3</div><span>Details</span></div>
+  <div class="prog-line" id="pl3"></div>
+  <div class="prog-step" id="ps4"><div class="prog-dot">4</div><span>Payment</span></div>
+</div>
+
+<div id="main">
+
+  <!-- ── STEP 1: Dates ── -->
+  <div class="step active" id="step1">
+    <div class="card">
+      <h2>📅 When are you visiting?</h2>
+      <p class="sub">Select your check-in and check-out dates</p>
+      <div class="date-row">
+        <div class="date-box">
+          <label>Check-in date</label>
+          <input type="date" id="checkin" onchange="onDateChange()">
+        </div>
+        <div class="date-box">
+          <label>Check-out date</label>
+          <input type="date" id="checkout" onchange="onDateChange()">
+        </div>
+      </div>
+      <div id="nights-display" style="display:none;margin-top:12px"></div>
+      <div id="date-err" style="color:#ef4444;font-size:12px;margin-top:8px;display:none"></div>
+      <div style="margin-top:14px">
+        <label style="font-size:11px;font-weight:700;color:#4a7a5a;text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:5px">Number of guests</label>
+        <select id="guest-count" style="padding:10px 12px;border:2px solid #c8ddd4;border-radius:8px;font-size:14px;color:#1a2e24;outline:none;background:#fff;width:100%;font-family:inherit">
+          <option value="1">1 guest</option>
+          <option value="2" selected>2 guests</option>
+          <option value="3">3 guests</option>
+          <option value="4">4 guests</option>
+          <option value="5">5 guests</option>
+          <option value="6">6 guests</option>
+          <option value="7">7 guests</option>
+          <option value="8">8+ guests</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="goStep2()">Search Availability →</button>
+    <div class="trust-row">
+      <div class="trust-item">🔒 Secure booking</div>
+      <div class="trust-item">✅ Instant confirmation</div>
+      <div class="trust-item">📱 SMS confirmation</div>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Site type + specific site ── -->
+  <div class="step" id="step2">
+    <button class="btn-back" onclick="goStep(1)">← Change dates</button>
+    <div id="avail-summary" style="background:#f0f9f4;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#1B4332;font-weight:600;border:1px solid #c8ddd4"></div>
+
+    <div class="card">
+      <h2>🏕️ Choose your site type</h2>
+      <p class="sub">Select what suits your setup best</p>
+      <div class="type-grid" id="type-grid"></div>
+    </div>
+
+    <div class="card" id="site-picker-card" style="display:none">
+      <h2 id="site-picker-title">Choose a specific site</h2>
+      <p class="sub">All shown sites are available for your dates</p>
+      <div class="any-site-btn selected" id="any-site-btn" onclick="selectAnySite()">
+        🎲 Any available site (we'll assign the best one)
+      </div>
+      <div class="site-grid" id="site-grid"></div>
+    </div>
+
+    <button class="btn-primary" id="step2-next" onclick="goStep3()" disabled>Continue →</button>
+  </div>
+
+  <!-- ── STEP 3: Guest details ── -->
+  <div class="step" id="step3">
+    <button class="btn-back" onclick="goStep(2)">← Change site</button>
+    <div class="card">
+      <h2>👤 Your details</h2>
+      <p class="sub">We'll send your confirmation to the email below</p>
+      <div class="form-grid">
+        <div class="field">
+          <label>First name <span class="req">*</span></label>
+          <input type="text" id="f-first" placeholder="Sarah" autocomplete="given-name">
+          <div class="err-msg">Required</div>
+        </div>
+        <div class="field">
+          <label>Last name <span class="req">*</span></label>
+          <input type="text" id="f-last" placeholder="Thompson" autocomplete="family-name">
+          <div class="err-msg">Required</div>
+        </div>
+        <div class="field full">
+          <label>Email address <span class="req">*</span></label>
+          <input type="email" id="f-email" placeholder="sarah@example.com" autocomplete="email">
+          <div class="err-msg">Enter a valid email</div>
+        </div>
+        <div class="field full">
+          <label>Mobile number <span class="req">*</span></label>
+          <input type="tel" id="f-phone" placeholder="04xx xxx xxx" autocomplete="tel">
+          <div class="err-msg">Required</div>
+        </div>
+        <div class="field full">
+          <label>Vehicle / rig description</label>
+          <input type="text" id="f-vehicle" placeholder="e.g. Jayco Swan 18ft caravan, white Hilux" autocomplete="off">
+        </div>
+        <div class="field full">
+          <label>Special requests or notes</label>
+          <textarea id="f-notes" placeholder="Accessibility needs, site preferences, pets, etc."></textarea>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:12px;background:#fffbeb;border-radius:8px;border:1px solid #fde68a;font-size:12px;color:#92400e">
+        🐾 <strong>Pets welcome</strong> — please mention your pet in the notes above so we can allocate the most suitable site.
+      </div>
+    </div>
+    <button class="btn-primary" onclick="goStep4()">Continue to Payment →</button>
+  </div>
+
+  <!-- ── STEP 4: Payment ── -->
+  <div class="step" id="step4">
+    <button class="btn-back" onclick="goStep(3)">← Edit details</button>
+
+    <!-- Booking summary -->
+    <div class="card">
+      <h2>📋 Booking Summary</h2>
+      <div class="summary-box" id="booking-summary"></div>
+
+      <h2 style="margin-bottom:12px">💳 Payment option</h2>
+      <div class="pay-options">
+        <div class="pay-card selected" id="pay-deposit" onclick="selectPayment('deposit')">
+          <h4>Pay deposit now</h4>
+          <p>25% deposit secures your booking. Pay the balance on arrival.</p>
+          <div class="pay-amount" id="deposit-amount">A$—</div>
+          <div style="font-size:10px;color:#6b8f79;margin-top:4px">Balance due on arrival</div>
+        </div>
+        <div class="pay-card" id="pay-full" onclick="selectPayment('full')">
+          <h4>Pay in full</h4>
+          <p>Pay the total amount now and arrive with nothing owing.</p>
+          <div class="pay-amount" id="full-amount">A$—</div>
+          <div style="font-size:10px;color:#52B788;margin-top:4px;font-weight:700">✓ Recommended</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-bottom:14px">🔒 Card Details</h2>
+      <!-- Stripe payment element would mount here in production -->
+      <!-- Demo: show card form UI -->
+      <div style="background:#f9fafb;border:2px solid #e0e8e4;border-radius:10px;padding:16px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:#4a7a5a;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px">Card number</div>
+        <input type="text" id="card-num" placeholder="1234 5678 9012 3456" maxlength="19"
+          style="width:100%;border:none;background:transparent;font-size:16px;color:#1a2e24;outline:none;font-family:monospace"
+          oninput="formatCard(this)">
+        <div style="height:1px;background:#e0e8e4;margin:10px 0"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#4a7a5a;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">Expiry</div>
+            <input type="text" id="card-exp" placeholder="MM/YY" maxlength="5"
+              style="border:none;background:transparent;font-size:15px;color:#1a2e24;outline:none;width:100%;font-family:monospace"
+              oninput="formatExpiry(this)">
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#4a7a5a;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">CVC</div>
+            <input type="text" id="card-cvc" placeholder="123" maxlength="4"
+              style="border:none;background:transparent;font-size:15px;color:#1a2e24;outline:none;width:100%;font-family:monospace">
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#6b8f79;text-align:center;margin-bottom:14px">
+        🔒 Payments processed securely by Stripe. Your card details are never stored by us.
+      </div>
+      <div id="pay-err" style="color:#ef4444;font-size:13px;margin-bottom:10px;display:none;text-align:center"></div>
+      <button class="btn-primary" id="pay-btn" onclick="submitBooking()">
+        Confirm &amp; Pay <span id="pay-btn-amount"></span>
+      </button>
+      <div class="trust-row" style="margin-top:12px">
+        <div class="trust-item">🔒 256-bit SSL</div>
+        <div class="trust-item">💳 Stripe secure payments</div>
+        <div class="trust-item">✅ Instant confirmation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONFIRMATION ── -->
+  <div id="confirm-screen">
+    <div class="card" style="text-align:center;padding:32px 24px">
+      <div class="confirm-icon">🎉</div>
+      <h2 style="font-size:22px;margin-bottom:8px;color:#1B4332">You're all booked!</h2>
+      <p style="color:#4a7a5a;margin-bottom:16px;font-size:14px">Your booking at <strong id="conf-park"></strong> is confirmed.</p>
+      <div class="confirm-id" id="conf-id">BK0000</div>
+      <div class="summary-box" id="conf-summary" style="margin-top:20px;text-align:left"></div>
+      <div style="background:#f0f9f4;border-radius:10px;padding:14px;margin-top:12px;font-size:13px;color:#1B4332;border:1px solid #c8ddd4">
+        📧 A confirmation has been sent to <strong id="conf-email"></strong><br>
+        📱 You'll receive an SMS on the day of arrival with check-in details
+      </div>
+      <div style="margin-top:20px">
+        <button onclick="startOver()" style="background:none;border:2px solid #1B4332;color:#1B4332;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:700;cursor:pointer">
+          Make another booking
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Load park data from localStorage (shared with main app) ───────────────────
+const PARKS_KEY    = 'parks';
+const SITES_KEY    = 'custom_sites';
+const BOOKINGS_KEY = 'bookings_cache';
+
+const TYPE_META = {
+  powered:   { icon:'⚡', label:'Powered Sites',   desc:'Power & water connection',    color:'#1B4332' },
+  unpowered: { icon:'🌿', label:'Unpowered Sites',  desc:'Grass sites, no power',       color:'#2D6A4F' },
+  cabin:     { icon:'🏠', label:'Cabins',           desc:'Self-contained cabins',        color:'#4a7a5a' },
+  ensuite:   { icon:'🚿', label:'Ensuite Sites',    desc:'Private bathroom included',    color:'#1B4332' },
+  villa:     { icon:'🏡', label:'Villas',           desc:'Premium fully equipped villa', color:'#145c3c' },
+  glamping:  { icon:'⛺', label:'Glamping Tents',   desc:'Luxury safari-style tents',    color:'#2D6A4F' },
+  overflow:  { icon:'🅿️', label:'Budget Sites',     desc:'Basic sites, great value',     color:'#4a7a5a' },
+};
+
+// Default sites if localStorage not available (iframe on external site)
+const DEFAULT_SITES = [
+  {id:'P1',label:'P1',type:'powered',price:55},
+  {id:'P2',label:'P2',type:'powered',price:55},
+  {id:'P3',label:'P3',type:'powered',price:55},
+  {id:'P4',label:'P4',type:'powered',price:55},
+  {id:'P5',label:'P5',type:'powered',price:55},
+  {id:'P6',label:'P6',type:'powered',price:55},
+  {id:'P7',label:'P7',type:'powered',price:55},
+  {id:'P8',label:'P8',type:'powered',price:55},
+  {id:'P9',label:'P9',type:'powered',price:55},
+  {id:'P10',label:'P10',type:'powered',price:55},
+  {id:'U1',label:'U1',type:'unpowered',price:38},{id:'U2',label:'U2',type:'unpowered',price:38},
+  {id:'U3',label:'U3',type:'unpowered',price:38},{id:'U4',label:'U4',type:'unpowered',price:38},
+  {id:'U5',label:'U5',type:'unpowered',price:38},{id:'U6',label:'U6',type:'unpowered',price:38},
+  {id:'C1',label:'C1',type:'cabin',price:120},{id:'C2',label:'C2',type:'cabin',price:120},
+  {id:'C3',label:'C3',type:'cabin',price:120},{id:'C4',label:'C4',type:'cabin',price:120},
+  {id:'E1',label:'E1',type:'ensuite',price:75},{id:'E2',label:'E2',type:'ensuite',price:75},
+  {id:'V1',label:'V1',type:'villa',price:185},{id:'V2',label:'V2',type:'villa',price:185},
+  {id:'G1',label:'G1',type:'glamping',price:95},{id:'G2',label:'G2',type:'glamping',price:95},
+];
+
+function loadSites() {
+  try {
+    const stored = localStorage.getItem(SITES_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch(e) {}
+  return DEFAULT_SITES;
+}
+
+function loadBookings() {
+  try {
+    const stored = localStorage.getItem(BOOKINGS_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch(e) {}
+  return [];
+}
+
+function loadPark() {
+  try {
+    const parks = JSON.parse(localStorage.getItem(PARKS_KEY) || '[]');
+    const activeId = localStorage.getItem('activeParkId');
+    return parks.find(p=>p.id===activeId) || parks[0] || { name:'Billabong Breeze', location:'Mundaring, WA' };
+  } catch(e) { return { name:'Billabong Breeze', location:'Mundaring, WA' }; }
+}
+
+const SITES   = loadSites();
+const park    = loadPark();
+
+document.getElementById('park-name-hdr').textContent = park.name;
+document.getElementById('park-sub-hdr').textContent  = (park.location || '') + ' · Book your stay online';
+document.title = 'Book Your Stay — ' + park.name;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let state = {
+  checkIn:     '',
+  checkOut:    '',
+  guests:      2,
+  nightCount:  0,
+  selectedType:'',
+  selectedSite:'',  // '' = any
+  paymentMode: 'deposit',
+  total:       0,
+  deposit:     0,
+  bookingId:   '',
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function nights(a, b) { return Math.max(0, Math.round((new Date(b)-new Date(a))/86400000)); }
+function genId() { return 'BK' + String(Date.now()).slice(-6); }
+function fmtDate(d) { return new Date(d+'T00:00:00').toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); }
+function fmtAUD(n) { return 'A$' + n.toFixed(2); }
+
+function isOccupied(siteId, checkIn, checkOut) {
+  const bookings = loadBookings();
+  return bookings.some(b =>
+    b.siteId === siteId && b.status !== 'cancelled' &&
+    checkIn < b.checkOut && checkOut > b.checkIn
+  );
+}
+
+function getAvailableSites(type, checkIn, checkOut) {
+  return SITES.filter(s =>
+    s.type === type && !isOccupied(s.id, checkIn, checkOut)
+  );
+}
+
+function naturalSort(a, b) {
+  const re=/(\d+)/g, ap=a.id.split(re), bp=b.id.split(re);
+  for(let i=0;i<Math.max(ap.length,bp.length);i++){
+    const an=parseInt(ap[i]||''),bn=parseInt(bp[i]||'');
+    if(!isNaN(an)&&!isNaN(bn)&&an!==bn) return an-bn;
+    if((ap[i]||'')!==(bp[i]||'')) return(ap[i]||'').localeCompare(bp[i]||'');
+  }
+  return 0;
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+function updateProgress(step) {
+  for (let i = 1; i <= 4; i++) {
+    const ps = document.getElementById('ps'+i);
+    const pl = document.getElementById('pl'+i);
+    ps.className = 'prog-step' + (i < step ? ' done' : i === step ? ' active' : '');
+    ps.querySelector('.prog-dot').textContent = i < step ? '✓' : i;
+    if (pl) pl.className = 'prog-line' + (i < step ? ' done' : '');
+  }
+}
+
+function goStep(n) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('step'+n);
+  if (el) el.classList.add('active');
+  document.getElementById('confirm-screen').classList.remove('show');
+  updateProgress(n);
+  window.scrollTo(0, 0);
+}
+
+// ── Step 1: Dates ─────────────────────────────────────────────────────────────
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('checkin').min  = today;
+document.getElementById('checkout').min = today;
+document.getElementById('checkin').value = today;
+
+function addDaysStr(d, n) {
+  const dt = new Date(d+'T00:00:00'); dt.setDate(dt.getDate()+n); return dt.toISOString().split('T')[0];
+}
+document.getElementById('checkout').value = addDaysStr(today, 3);
+onDateChange();
+
+function onDateChange() {
+  const ci = document.getElementById('checkin').value;
+  const co = document.getElementById('checkout').value;
+  const errEl = document.getElementById('date-err');
+  const nightEl = document.getElementById('nights-display');
+  if (!ci || !co) return;
+  const n = nights(ci, co);
+  if (co <= ci) {
+    errEl.style.display = 'block';
+    errEl.textContent = 'Check-out must be after check-in';
+    nightEl.style.display = 'none';
+    return;
+  }
+  errEl.style.display = 'none';
+  nightEl.style.display = 'flex';
+  nightEl.innerHTML = `<span class="nights-pill">🌙 ${n} night${n!==1?'s':''} · ${fmtDate(ci)} → ${fmtDate(co)}</span>`;
+  state.checkIn = ci; state.checkOut = co; state.nightCount = n;
+  document.getElementById('checkout').min = addDaysStr(ci, 1);
+}
+
+function goStep2() {
+  state.checkIn  = document.getElementById('checkin').value;
+  state.checkOut = document.getElementById('checkout').value;
+  state.guests   = parseInt(document.getElementById('guest-count').value);
+  state.nightCount = nights(state.checkIn, state.checkOut);
+  if (!state.checkIn || !state.checkOut || state.checkOut <= state.checkIn) {
+    document.getElementById('date-err').style.display = 'block';
+    document.getElementById('date-err').textContent = 'Please select valid dates';
+    return;
+  }
+  renderTypeGrid();
+  goStep(2);
+}
+
+// ── Step 2: Site type & specific site ─────────────────────────────────────────
+function renderTypeGrid() {
+  const typeGrid = document.getElementById('type-grid');
+  const summaryEl = document.getElementById('avail-summary');
+
+  // Group sites by type
+  const byType = {};
+  SITES.forEach(s => { if (!byType[s.type]) byType[s.type] = []; byType[s.type].push(s); });
+
+  let totalAvail = 0;
+  let html = '';
+
+  Object.entries(TYPE_META).forEach(([type, meta]) => {
+    const allSites = byType[type] || [];
+    if (!allSites.length) return;
+    const availSites = getAvailableSites(type, state.checkIn, state.checkOut);
+    const avail = availSites.length;
+    const price = allSites[0].price;
+    const unavail = avail === 0;
+    totalAvail += avail;
+
+    html += `<div class="type-card${unavail?' unavail':''}" onclick="${unavail?'':''}" id="tc-${type}"
+      ${unavail?'':'onclick="selectType(\''+type+'\')"'}>
+      ${avail > 0 && avail <= 3 ? `<div class="type-badge">Only ${avail} left</div>` : ''}
+      <div class="type-icon">${meta.icon}</div>
+      <div class="type-name">${meta.label}</div>
+      <div class="type-price">From A$${price}/night</div>
+      <div class="type-count">${unavail ? '❌ Unavailable' : `${avail} site${avail!==1?'s':''} available`}</div>
+    </div>`;
+  });
+
+  typeGrid.innerHTML = html;
+  summaryEl.innerHTML = `🗓️ <strong>${fmtDate(state.checkIn)}</strong> → <strong>${fmtDate(state.checkOut)}</strong> &nbsp;·&nbsp; ${state.nightCount} nights &nbsp;·&nbsp; ${state.guests} guest${state.guests!==1?'s':''} &nbsp;·&nbsp; <strong>${totalAvail} sites available</strong>`;
+}
+
+function selectType(type) {
+  state.selectedType = type;
+  state.selectedSite = ''; // reset specific site
+
+  // Highlight selected type
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  const tc = document.getElementById('tc-'+type);
+  if (tc) tc.classList.add('selected');
+
+  // Show site picker
+  const card = document.getElementById('site-picker-card');
+  const title = document.getElementById('site-picker-title');
+  const meta = TYPE_META[type];
+  title.textContent = `${meta.icon} Choose a specific ${meta.label.replace(/s$/,'').toLowerCase()} (optional)`;
+  card.style.display = 'block';
+
+  // Render available sites
+  const availSites = getAvailableSites(type, state.checkIn, state.checkOut);
+  const allSites = SITES.filter(s=>s.type===type).sort(naturalSort);
+  const siteGrid = document.getElementById('site-grid');
+
+  siteGrid.innerHTML = allSites.map(site => {
+    const avail = !isOccupied(site.id, state.checkIn, state.checkOut);
+    return `<div class="site-btn${avail?'':' taken'}" id="sb-${site.id}"
+      ${avail?`onclick="selectSite('${site.id}')"`:''}>
+      ${site.label}
+      ${!avail?'<div style="font-size:9px;margin-top:2px">Taken</div>':''}
+    </div>`;
+  }).join('');
+
+  // Reset to "any site"
+  selectAnySite();
+  document.getElementById('step2-next').disabled = false;
+}
+
+function selectAnySite() {
+  state.selectedSite = '';
+  document.getElementById('any-site-btn').classList.add('selected');
+  document.querySelectorAll('.site-btn').forEach(b => b.classList.remove('selected'));
+}
+
+function selectSite(siteId) {
+  state.selectedSite = siteId;
+  document.getElementById('any-site-btn').classList.remove('selected');
+  document.querySelectorAll('.site-btn').forEach(b => b.classList.remove('selected'));
+  const el = document.getElementById('sb-'+siteId);
+  if (el) el.classList.add('selected');
+}
+
+function goStep3() {
+  if (!state.selectedType) { alert('Please select a site type'); return; }
+  goStep(3);
+}
+
+// ── Step 3: Guest details ─────────────────────────────────────────────────────
+function goStep4() {
+  // Validate
+  let valid = true;
+  const fields = [
+    { id:'f-first', check: v=>v.trim().length>0 },
+    { id:'f-last',  check: v=>v.trim().length>0 },
+    { id:'f-email', check: v=>/^[^@]+@[^@]+\.[^@]+$/.test(v) },
+    { id:'f-phone', check: v=>v.trim().length>=8 },
+  ];
+  fields.forEach(f => {
+    const el = document.getElementById(f.id);
+    const wrap = el.closest('.field');
+    const ok = f.check(el.value);
+    wrap.classList.toggle('error', !ok);
+    if (!ok) valid = false;
+  });
+  if (!valid) return;
+
+  // Calculate totals
+  const site = state.selectedSite
+    ? SITES.find(s=>s.id===state.selectedSite)
+    : SITES.filter(s=>s.type===state.selectedType)[0];
+  const price = site?.price || 0;
+  state.total   = price * state.nightCount;
+  state.deposit = Math.ceil(state.total * 0.25);
+
+  document.getElementById('deposit-amount').textContent = fmtAUD(state.deposit);
+  document.getElementById('full-amount').textContent    = fmtAUD(state.total);
+  document.getElementById('pay-btn-amount').textContent = fmtAUD(state.paymentMode==='deposit'?state.deposit:state.total);
+
+  renderSummary();
+  goStep(4);
+}
+
+function renderSummary() {
+  const meta = TYPE_META[state.selectedType] || {};
+  const siteLabel = state.selectedSite ? `Site ${state.selectedSite}` : `Any ${meta.label}`;
+  const dueNow = state.paymentMode==='deposit' ? state.deposit : state.total;
+  const dueArrival = state.paymentMode==='deposit' ? (state.total - state.deposit) : 0;
+
+  const html = `
+    <div class="summary-row"><span>${meta.icon} ${siteLabel}</span><span>${fmtDate(state.checkIn)}</span></div>
+    <div class="summary-row"><span>Check-out</span><span>${fmtDate(state.checkOut)}</span></div>
+    <div class="summary-row"><span>Duration</span><span>${state.nightCount} night${state.nightCount!==1?'s':''}</span></div>
+    <div class="summary-row"><span>Guests</span><span>${state.guests}</span></div>
+    <div class="summary-row total"><span>Total</span><span>${fmtAUD(state.total)}</span></div>
+    ${dueArrival>0?`<div class="summary-row due"><span>Due now (deposit)</span><span>${fmtAUD(dueNow)}</span></div>
+    <div class="summary-row"><span style="color:#6b8f79">Balance due on arrival</span><span style="color:#6b8f79">${fmtAUD(dueArrival)}</span></div>`
+    :`<div class="summary-row due"><span>Paid in full</span><span>${fmtAUD(dueNow)}</span></div>`}`;
+
+  document.getElementById('booking-summary').innerHTML = html;
+}
+
+function selectPayment(mode) {
+  state.paymentMode = mode;
+  document.getElementById('pay-deposit').classList.toggle('selected', mode==='deposit');
+  document.getElementById('pay-full').classList.toggle('selected', mode==='full');
+  const dueNow = mode==='deposit' ? state.deposit : state.total;
+  document.getElementById('pay-btn-amount').textContent = fmtAUD(dueNow);
+  renderSummary();
+}
+
+// ── Card formatting ───────────────────────────────────────────────────────────
+function formatCard(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,16);
+  el.value = v.replace(/(.{4})/g,'$1 ').trim();
+}
+function formatExpiry(el) {
+  let v = el.value.replace(/\D/g,'').slice(0,4);
+  if (v.length>=3) v = v.slice(0,2)+'/'+v.slice(2);
+  el.value = v;
+}
+
+// ── Submit booking ────────────────────────────────────────────────────────────
+async function submitBooking() {
+  const btn = document.getElementById('pay-btn');
+  const errEl = document.getElementById('pay-err');
+  errEl.style.display = 'none';
+
+  // Basic card validation
+  const cardNum = document.getElementById('card-num').value.replace(/\s/g,'');
+  const cardExp = document.getElementById('card-exp').value;
+  const cardCvc = document.getElementById('card-cvc').value;
+  if (cardNum.length < 16 || !cardExp.includes('/') || cardCvc.length < 3) {
+    errEl.style.display = 'block';
+    errEl.textContent = 'Please enter complete card details';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Processing...';
+
+  // Simulate payment processing (replace with real Stripe in production)
+  await new Promise(r => setTimeout(r, 1800));
+
+  // Assign site
+  let assignedSiteId = state.selectedSite;
+  if (!assignedSiteId) {
+    const avail = getAvailableSites(state.selectedType, state.checkIn, state.checkOut);
+    if (!avail.length) {
+      btn.disabled = false;
+      btn.innerHTML = 'Confirm & Pay ' + fmtAUD(state.paymentMode==='deposit'?state.deposit:state.total);
+      errEl.style.display = 'block';
+      errEl.textContent = 'Sorry, no sites available for these dates. Please try different dates.';
+      return;
+    }
+    assignedSiteId = avail[0].id;
+  }
+
+  // Build booking record
+  const firstName = document.getElementById('f-first').value.trim();
+  const lastName  = document.getElementById('f-last').value.trim();
+  const email     = document.getElementById('f-email').value.trim();
+  const phone     = document.getElementById('f-phone').value.trim();
+  const vehicle   = document.getElementById('f-vehicle').value.trim();
+  const notes     = document.getElementById('f-notes').value.trim();
+  const dueNow    = state.paymentMode==='deposit' ? state.deposit : state.total;
+
+  const booking = {
+    id:       genId(),
+    siteId:   assignedSiteId,
+    guest:    firstName + ' ' + lastName,
+    email,
+    phone,
+    vehicle,
+    notes,
+    guests:   state.guests,
+    checkIn:  state.checkIn,
+    checkOut: state.checkOut,
+    status:   'confirmed',
+    paid:     state.paymentMode === 'full',
+    total:    state.total,
+    deposit:  state.deposit,
+    paidAmount: dueNow,
+    paymentMode: state.paymentMode,
+    bookedVia: 'online',
+    bookedAt:  new Date().toISOString(),
+    stripePaymentIntentId: 'pi_demo_' + genId(),
+  };
+
+  // Save to localStorage (picked up by main app)
+  try {
+    const existing = JSON.parse(localStorage.getItem(BOOKINGS_KEY) || '[]');
+    existing.push(booking);
+    localStorage.setItem(BOOKINGS_KEY, JSON.stringify(existing));
+    localStorage.setItem('new_online_booking', JSON.stringify(booking)); // triggers main app refresh
+  } catch(e) {}
+
+  state.bookingId = booking.id;
+
+  // Show confirmation
+  showConfirmation(booking, assignedSiteId, firstName);
+}
+
+function showConfirmation(booking, siteId, firstName) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  const conf = document.getElementById('confirm-screen');
+  conf.classList.add('show');
+  updateProgress(5);
+
+  document.getElementById('conf-id').textContent   = booking.id;
+  document.getElementById('conf-park').textContent = park.name;
+  document.getElementById('conf-email').textContent = booking.email;
+
+  const meta = TYPE_META[state.selectedType] || {};
+  const dueArrival = booking.total - booking.paidAmount;
+
+  document.getElementById('conf-summary').innerHTML = `
+    <div class="summary-row"><span>${meta.icon} Site ${siteId}</span><span>${fmtDate(booking.checkIn)}</span></div>
+    <div class="summary-row"><span>Check-out</span><span>${fmtDate(booking.checkOut)}</span></div>
+    <div class="summary-row"><span>Guests</span><span>${booking.guests}</span></div>
+    <div class="summary-row total"><span>Paid now</span><span style="color:#1B4332">${fmtAUD(booking.paidAmount)}</span></div>
+    ${dueArrival>0?`<div class="summary-row"><span style="color:#6b8f79">Balance due on arrival</span><span style="color:#6b8f79">${fmtAUD(dueArrival)}</span></div>`:''}`;
+
+  window.scrollTo(0, 0);
+}
+
+function startOver() {
+  state = { checkIn:'', checkOut:'', guests:2, nightCount:0, selectedType:'', selectedSite:'', paymentMode:'deposit', total:0, deposit:0, bookingId:'' };
+  document.getElementById('confirm-screen').classList.remove('show');
+  document.getElementById('checkin').value  = today;
+  document.getElementById('checkout').value = addDaysStr(today, 3);
+  onDateChange();
+  goStep(1);
+}
+
+// Listen for storage changes from main app (site updates etc)
+window.addEventListener('storage', e => {
+  if (e.key === SITES_KEY) location.reload();
+});
+</script>
+</body>
+</html>
