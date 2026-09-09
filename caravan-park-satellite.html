@@ -324,9 +324,9 @@
   #search-input:focus { border-color: var(--accent); }
 
   /* ── Dashboard stat cards ── */
-  .dash-stat-card { background:#fff; border-radius:10px; padding:10px 14px; box-shadow:0 1px 4px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:2px; }
-  .dash-stat-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:3px; }
-  .dash-stat-val { font-size:22px; font-weight:900; color:#1a1a1a; line-height:1; }
+  .dash-stat-card { background:#fff; border-radius:10px; padding:12px 14px; box-shadow:0 1px 4px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:3px; }
+  .dash-stat-icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:4px; }
+  .dash-stat-val { font-size:24px; font-weight:900; color:#1a1a1a; line-height:1; }
   .dash-stat-lbl { font-size:10px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; }
   .dash-stat-sub { font-size:11px; color:#999; margin-top:1px; }
   .dash-stat-link { font-size:11px; color:#1B4332; font-weight:700; cursor:pointer; margin-top:4px; display:block; }
@@ -3985,7 +3985,9 @@ function openBookingDetail(b) {
           : b.status === 'checked-in' && b.checkIn > TODAY
           ? `<button class="btn btn-outline" style="flex:1;padding:11px;border-color:#f97316;color:#f97316" onclick="undoCheckIn('${b.id}')" title="This guest was checked in before their arrival date">⚠️ Undo Early Check-In</button>`
           : b.status === 'checked-in'
-          ? `<button class="btn btn-outline" style="flex:1;padding:11px;border-color:#ef4444;color:#ef4444" onclick="performCheckout('${b.id}')">👋 Check Out</button>`
+          ? (b.checkOut <= TODAY
+            ? `<button class="btn btn-outline" style="flex:1;padding:11px;border-color:#f97316;color:#f97316;font-weight:700" onclick="openPendingDeparture('${b.id}')">⏰ Pending Departure</button>`
+            : `<button class="btn btn-outline" style="flex:1;padding:11px;border-color:#ef4444;color:#ef4444" onclick="performCheckout('${b.id}')">👋 Check Out</button>`)
           : ''}
         ${!b.paid
           ? `<button class="btn btn-green" style="flex:1;padding:11px" onclick="openTakePayment('${b.id}')">💳 Take Payment</button>`
@@ -8729,17 +8731,9 @@ function setHkStatus(siteId, status, note='') {
 
 // Auto-mark sites dirty when a guest checks out
 function autoMarkDirtyOnCheckout() {
-  // Now handled per-site via getSiteAutoDirty toggle
-  // Still run for any sites that have auto-dirty enabled and checkouts today
-  const now = new Date().toISOString().split('T')[0];
-  bookings.forEach(b => {
-    if (b.checkOut === now && b.status !== 'cancelled' && getSiteAutoDirty(b.siteId)) {
-      const current = getSiteHkStatus(b.siteId);
-      if (current === 'clean' || current === 'inspected') {
-        setHkStatus(b.siteId, 'dirty', `Auto: ${b.guest} checkout day`);
-      }
-    }
-  });
+  // Date-based auto-dirty removed — too aggressive, causes false positives
+  // Dirty is now only triggered by explicit manual checkout action
+  // This function kept for compatibility but does nothing automatically
 }
 
 function markAllClean() {
@@ -13379,7 +13373,17 @@ ${arrivingTomorrow.map(b=>`  • ${b.guest} → ${b.siteId}${b.expectedArrival?'
 NEXT 7 DAYS (${next7Arrivals.length} bookings):
 ${next7Arrivals.slice(0,10).map(b=>`  • ${fmtDate(b.checkIn)} ${b.guest} → ${b.siteId}`).join('\n')||'  None'}
 
-OVERDUE CHECK-INS (${overdue.length}):
+PENDING DEPARTURES — guests past checkout time still showing checked-in (${(() => {
+  const pd = bookings.filter(b=>b.checkOut<TODAY && b.status==='checked-in');
+  return pd.length;
+})()}):
+${(() => {
+  const pd = bookings.filter(b=>b.checkOut<TODAY && b.status==='checked-in');
+  if (!pd.length) return '  None';
+  return pd.map(b=>`  • ${b.guest} on ${b.siteId} — checkout was ${fmtDate(b.checkOut)}${b.lateCheckoutTime?' (late checkout approved: '+b.lateCheckoutTime+')':''}`).join('\n');
+})()}
+
+OVERDUE CHECK-INS — confirmed but not yet checked in past arrival date (${overdue.length}):
 ${overdue.map(b=>`  • ${b.guest} was due ${fmtDate(b.checkIn)} on ${b.siteId} — still confirmed, not checked in`).join('\n')||'  None'}
 
 ═══ PAYMENTS ═══
@@ -13424,6 +13428,12 @@ ${waitlist.map(w=>`  • ${w.guest} wants ${fmtDate(w.checkIn)} to ${fmtDate(w.c
 ${recentActivity.slice(0,5).map(e=>`  • ${new Date(e.timestamp).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})} ${e.type}: ${e.guest||e.siteId||''}`).join('\n')||'  No recent activity'}
 
 You are a friendly, knowledgeable Australian caravan park management assistant with the ability to take REAL actions in the park management system.
+
+IMPORTANT — HOUSEKEEPING LANGUAGE:
+- Only say a site "needs cleaning" or "is dirty" if it appears in the NEEDS CLEANING section above with status='dirty'
+- If a guest has checked out but the site is NOT marked dirty, say "P2 had a checkout today — has it been cleaned yet?" NOT "P2 needs cleaning"
+- Never assume a site needs cleaning based on checkout date alone — the toggle may be off or cleaning may already be done
+- Always distinguish between confirmed dirty status vs inferred cleaning needed
 
 AVAILABLE ACTIONS — you can execute these by including them in your response:
 - Block a site: [ACTION:block_site siteId="P3" type="maintenance" from="2026-09-09" to="2026-09-15" reason="Tap repair"]
@@ -14677,19 +14687,19 @@ function checkLateCheckouts() {
       const site  = SITES.find(s=>s.id===b.siteId);
       const tc    = TYPE[site?.type]||{icon:'📍'};
 
-      // At exactly 10am — auto-dirty and alert
+      // Skip if late checkout was approved
+      if (b.lateCheckoutTime) return;
+
+      // At exactly 10am — alert only, NO auto-dirty
       if (nowMins >= checkoutTime && nowMins < checkoutTime+5) {
         const atTimeKey = b.id+'_checkout_time';
         if (!_lateCheckoutAlertsFired.has(atTimeKey)) {
           _lateCheckoutAlertsFired.add(atTimeKey);
-          // Auto-dirty if toggled
-          triggerAutoDirty(b.id, 'checkout time reached');
-          // Alert
           notify(`⏰ Checkout time — ${b.guest} on ${tc.icon} ${b.siteId} is due to check out now`, '#f9c74f');
         }
       }
 
-      // Late — more than 30 mins past checkout
+      // Late — more than 30 mins past checkout — prompt to take action
       if (nowMins >= checkoutTime + 30) {
         const lateKey = b.id+'_late_checkout';
         if (!_lateCheckoutAlertsFired.has(lateKey)) {
@@ -14697,8 +14707,8 @@ function checkLateCheckouts() {
           const minsLate = nowMins - checkoutTime;
           const hrsLate  = Math.floor(minsLate/60);
           const minLbl   = hrsLate > 0 ? `${hrsLate}h ${minsLate%60}m` : `${minsLate}m`;
-          notify(`🔴 Late checkout — ${b.guest} on ${tc.icon} ${b.siteId} is ${minLbl} overdue`, '#ef4444');
-          // Add to maintenance-style alert for ARIA
+          // Show notification with action button
+          notify(`⏰ ${b.guest} on ${tc.icon} ${b.siteId} is ${minLbl} past checkout — tap to action`, '#f97316');
           logActivity('late_checkout', { bookingId:b.id, guest:b.guest, siteId:b.siteId, minsLate });
         }
       }
@@ -14711,6 +14721,156 @@ setInterval(checkLateCheckouts, 60000);
 setTimeout(checkLateCheckouts, 4000);
 
 // Update autoMarkDirtyOnCheckout to use per-site toggle
+
+
+// ══════════════════════════════════════════════════════════════
+// PENDING DEPARTURE — three-option flow
+// ══════════════════════════════════════════════════════════════
+
+function openPendingDeparture(bookingId) {
+  const b = bookings.find(x=>x.id===bookingId);
+  if (!b) return;
+  const site = SITES.find(s=>s.id===b.siteId);
+  const tc   = TYPE[site?.type]||{icon:'📍',label:'Site'};
+  const hoursLate = Math.round((Date.now()-new Date(b.checkOut+'T10:00:00'))/3600000);
+  const lateText  = hoursLate > 0 ? `${hoursLate} hour${hoursLate!==1?'s':''} overdue` : 'due now';
+
+  openModal(`⏰ Pending Departure — ${b.guest}`, `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <!-- Status card -->
+      <div style="background:linear-gradient(135deg,#3d1a00,#5a2800);border-radius:10px;padding:14px 16px;border:1px solid #f9742444">
+        <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:4px">${b.guest}</div>
+        <div style="font-size:12px;color:#fdb57a">${tc.icon} ${b.siteId} · Checkout was due at 10:00am today · ${lateText}</div>
+        ${!b.paid?`<div style="margin-top:8px;font-size:12px;color:#f9c74f;font-weight:700">⚠️ Outstanding balance: A$${(b.total||0).toFixed(2)}</div>`:''}
+      </div>
+
+      <p style="font-size:13px;color:var(--text-muted);margin:0;line-height:1.6">
+        What's happening with this guest?
+      </p>
+
+      <!-- Option 1 — Check out -->
+      <button onclick="closeModal();performCheckout('${b.id}')"
+        style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(82,183,136,0.08);border:1px solid #52B78844;border-radius:10px;cursor:pointer;text-align:left;width:100%;transition:border-color 0.15s"
+        onmouseover="this.style.borderColor='#52B788'" onmouseout="this.style.borderColor='#52B78844'">
+        <span style="font-size:24px">✅</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary)">Guest has left — Check Out</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Closes the booking${getSiteAutoDirty(b.siteId)?' and marks the site for cleaning':''}</div>
+        </div>
+      </button>
+
+      <!-- Option 2 — Extend stay -->
+      <button onclick="openExtendStay('${b.id}')"
+        style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(33,150,243,0.08);border:1px solid #2196F344;border-radius:10px;cursor:pointer;text-align:left;width:100%;transition:border-color 0.15s"
+        onmouseover="this.style.borderColor='#2196F3'" onmouseout="this.style.borderColor='#2196F344'">
+        <span style="font-size:24px">📅</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary)">Guest is extending their stay</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Update checkout date and keep them checked in</div>
+        </div>
+      </button>
+
+      <!-- Option 3 — Late checkout -->
+      <button onclick="openLateCheckout('${b.id}')"
+        style="display:flex;align-items:center;gap:12px;padding:14px;background:rgba(249,199,74,0.08);border:1px solid #f9c74f44;border-radius:10px;cursor:pointer;text-align:left;width:100%;transition:border-color 0.15s"
+        onmouseover="this.style.borderColor='#f9c74f'" onmouseout="this.style.borderColor='#f9c74f44'">
+        <span style="font-size:24px">⏰</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary)">Approved late checkout</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">Set a new checkout time for today — snoozes the alert</div>
+        </div>
+      </button>
+
+      <button class="btn btn-outline" onclick="closeModal()" style="font-size:12px">Cancel — Check Later</button>
+    </div>
+  `);
+}
+
+function openExtendStay(bookingId) {
+  const b = bookings.find(x=>x.id===bookingId);
+  if (!b) return;
+  const tomorrow = addDays(TODAY, 1);
+
+  openModal('📅 Extend Stay', `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <p style="font-size:13px;color:var(--text-muted);margin:0">
+        Update the checkout date for <strong style="color:var(--text-primary)">${b.guest}</strong> on ${b.siteId}.
+      </p>
+      <div class="form-field">
+        <label>New Checkout Date</label>
+        <input type="date" id="extend-checkout" value="${tomorrow}"
+          min="${TODAY}"
+          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:14px;outline:none">
+      </div>
+      <div class="form-field">
+        <label>Additional charge per night (A$)</label>
+        <input type="number" id="extend-rate" value="${b.total ? Math.round(b.total/Math.max(1,nights(b.checkIn,b.checkOut))) : 0}" min="0"
+          style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:14px;outline:none">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="openPendingDeparture('${bookingId}')">← Back</button>
+        <button class="btn btn-green" onclick="confirmExtendStay('${bookingId}')">📅 Extend Stay</button>
+      </div>
+    </div>
+  `);
+}
+
+function confirmExtendStay(bookingId) {
+  const b   = bookings.find(x=>x.id===bookingId);
+  if (!b) return;
+  const newCheckout = document.getElementById('extend-checkout')?.value;
+  const rate        = parseFloat(document.getElementById('extend-rate')?.value)||0;
+  if (!newCheckout || newCheckout <= b.checkOut) { notify('Select a date after current checkout', '#f9c74f'); return; }
+
+  const extraNights = nights(b.checkOut, newCheckout);
+  const idx = bookings.findIndex(x=>x.id===bookingId);
+  bookings[idx].checkOut = newCheckout;
+  bookings[idx].total    = (bookings[idx].total||0) + (extraNights * rate);
+  bookings[idx].paid     = false; // mark as owing for extra nights
+  localStorage.setItem('bookings_cache', JSON.stringify(bookings));
+  closeModal();
+  refreshAll();
+  notify(`📅 ${b.guest} extended to ${fmtDate(newCheckout)} · ${extraNights} extra night${extraNights!==1?'s':''} · A$${(extraNights*rate).toFixed(2)} added`, '#52B788');
+  logActivity('stay_extended', { bookingId, guest:b.guest, siteId:b.siteId, newCheckout, extraNights });
+}
+
+function openLateCheckout(bookingId) {
+  const b = bookings.find(x=>x.id===bookingId);
+  if (!b) return;
+
+  openModal('⏰ Late Checkout', `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <p style="font-size:13px;color:var(--text-muted);margin:0">
+        What time is <strong style="color:var(--text-primary)">${b.guest}</strong> leaving today?
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${['11:00am','12:00pm','1:00pm','2:00pm','3:00pm'].map(t=>`
+          <button onclick="confirmLateCheckout('${bookingId}','${t}')"
+            style="flex:1;padding:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:13px;font-weight:600;cursor:pointer;min-width:80px">
+            ${t}
+          </button>`).join('')}
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="openPendingDeparture('${bookingId}')">← Back</button>
+      </div>
+    </div>
+  `);
+}
+
+function confirmLateCheckout(bookingId, time) {
+  const b = bookings.find(x=>x.id===bookingId);
+  if (!b) return;
+  const idx = bookings.findIndex(x=>x.id===bookingId);
+  bookings[idx].lateCheckoutTime = time;
+  localStorage.setItem('bookings_cache', JSON.stringify(bookings));
+  // Remove from late checkout alert set so it doesn't re-fire
+  _lateCheckoutAlertsFired.add(b.id+'_late_checkout');
+  _lateCheckoutAlertsFired.add(b.id+'_checkout_time');
+  closeModal();
+  refreshAll();
+  notify(`⏰ Late checkout approved for ${b.guest} — leaving at ${time}`, '#f9c74f');
+  logActivity('late_checkout_approved', { bookingId, guest:b.guest, siteId:b.siteId, time });
+}
 
 </script>
 </body>
