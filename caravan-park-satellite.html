@@ -336,10 +336,10 @@
   .today-item-name { font-size:13px; font-weight:700; color:#1a1a1a; }
   .today-item-meta { font-size:11px; color:#888; margin-top:1px; }
   .today-action-btn { padding:4px 12px; border-radius:6px; border:1px solid; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
-  .dc-site-col { position:sticky; left:0; background:#fff; z-index:5; padding:3px 6px; font-size:10px; font-weight:600; color:#333; border-right:1px solid #f0f0f0; white-space:nowrap; min-width:40px; max-width:40px; border-bottom:1px solid #f5f5f5; }
-  .dc-date-head { text-align:center; font-size:9px; color:#999; padding:3px 2px; min-width:32px; width:32px; background:#fff; position:sticky; top:0; z-index:8; border-bottom:1px solid #e0e0e0; }
+  .dc-site-col { position:sticky; left:0; background:#fff; z-index:5; padding:3px 8px; font-size:11px; font-weight:700; color:#1a1a1a; border-right:2px solid #e0e0e0; white-space:nowrap; width:100px; min-width:100px; max-width:100px; border-bottom:1px solid #f5f5f5; }
+  .dc-date-head { text-align:center; font-size:9px; color:#999; padding:2px 1px; min-width:26px; width:26px; background:#fff; position:sticky; top:0; z-index:8; border-bottom:1px solid #e0e0e0; }
   .dc-date-head.dc-today { color:#1B4332; font-weight:800; background:rgba(82,183,136,0.15); border-radius:4px; }
-  .dc-cell { width:32px; min-width:32px; height:28px; border-bottom:1px solid #f5f5f5; border-right:1px solid #f9f9f9; cursor:pointer; position:relative; }
+  .dc-cell { width:26px; min-width:26px; height:24px; border-bottom:1px solid #f5f5f5; border-right:1px solid #f9f9f9; cursor:pointer; position:relative; }
   .dc-cell.dc-today-col { background:rgba(82,183,136,0.1) !important; }
   .dc-cell.dc-today-col::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:#52B788; opacity:0.5; pointer-events:none; }
   .dc-cell.dc-available:hover { background:rgba(82,183,136,0.2); }
@@ -349,7 +349,7 @@
   .dc-cell.seg-mid   .dc-bar { left:0; right:0; border-radius:0; }
   .dc-cell.seg-end   .dc-bar { right:50%; border-radius:0 3px 3px 0; }
   .dc-cell.seg-solo  .dc-bar { border-radius:3px; }
-  .dc-group-row td { background:#f9fafb; font-size:9px; font-weight:800; color:#1B4332; text-transform:uppercase; letter-spacing:0.5px; padding:3px 6px; border-bottom:1px solid #e8e8e8; cursor:pointer; }
+  .dc-group-row td { background:#f0f7f4; font-size:9px; font-weight:800; color:#1B4332; text-transform:uppercase; letter-spacing:0.5px; padding:4px 8px; border-bottom:1px solid #d4eddf; cursor:pointer; }
   .dc-occ-row td { background:#f0f7f0; text-align:center; font-size:9px; font-weight:700; padding:2px 0; border-bottom:2px solid #e0e0e0; color:#1B4332; }
   .dc-occ-high { color:#FF9800; }
   .dc-occ-full { color:#f44336; }
@@ -1039,7 +1039,7 @@
             </div>
           </div>
           <div style="overflow-x:auto;max-height:320px;overflow-y:auto">
-            <table id="dash-chart-table" style="border-collapse:collapse;min-width:100%;font-size:12px"></table>
+            <div style="overflow-x:auto"><table id="dash-chart-table" style="border-collapse:collapse;font-size:12px;width:100%"></table></div>
           </div>
           <!-- Legend -->
           <div style="display:flex;gap:16px;padding:10px 18px;border-top:1px solid #f0f0f0;flex-wrap:wrap">
