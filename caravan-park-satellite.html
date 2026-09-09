@@ -7707,11 +7707,11 @@ function openClockOnPage() {
 function generateQR() {
   const container = document.getElementById('qr-svg-output');
   if (!container) return;
-  const url = getClockOnUrl();
-  const urlEl = document.getElementById('qr-url-display');
+  const url    = getClockOnUrl();
+  const urlEl  = document.getElementById('qr-url-display');
   if (urlEl) urlEl.textContent = 'URL: ' + url;
-  const svg = makeQRSvg(url, 180);
-  container.innerHTML = svg;
+  const qrSrc  = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}&color=1B4332&bgcolor=ffffff&qzone=2&format=svg`;
+  container.innerHTML = `<img src="${qrSrc}" width="220" height="220" style="border-radius:8px;display:block" alt="Clock-On QR Code" onerror="this.alt='QR failed to load — check internet connection'">`;
 }
 
 // ── QR Matrix builder ─────────────────────────────────────────────────────────
@@ -13461,16 +13461,13 @@ When asked operational questions, give specific actionable advice.
 You can see everything happening in the park right now.`;
 }
 
-async function callClaudeAPI(messages) {
+async function callClaudeAPI(messages, retryCount=0) {
   const apiKey = localStorage.getItem('sitehelm_ai_key') || '';
   if (!apiKey) {
     throw new Error('No API key set. Go to ⚙️ Settings → AI Assistant to add your Anthropic API key.');
   }
 
-  // Use Netlify proxy function if available (avoids CORS), otherwise try direct
   const isNetlify = window.location.hostname.includes('netlify.app') ||
-                    window.location.hostname.includes('netlify.com') ||
-                    !window.location.hostname.includes('localhost') &&
                     !window.location.protocol.includes('file');
 
   const endpoint = isNetlify
@@ -13483,19 +13480,35 @@ async function callClaudeAPI(messages) {
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-calls': 'true' };
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1000,
-      system: buildParkContext(),
-      messages: messages,
-    })
-  });
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message);
-  return data.content?.[0]?.text || 'No response';
+  try {
+    const controller = new AbortController();
+    const timeout    = setTimeout(() => controller.abort(), 25000); // 25s timeout
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        system: buildParkContext(),
+        messages: messages,
+      })
+    });
+
+    clearTimeout(timeout);
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.content?.[0]?.text || 'No response';
+
+  } catch(err) {
+    // Auto-retry once on timeout or network error — wakes up cold Netlify function
+    if (retryCount === 0 && (err.name === 'AbortError' || err.message.includes('fetch'))) {
+      await new Promise(r => setTimeout(r, 1500)); // wait 1.5s then retry
+      return callClaudeAPI(messages, 1);
+    }
+    throw err;
+  }
 }
 
 function saveAIKey() {
@@ -13617,7 +13630,7 @@ async function sendAIMessage() {
     if (actions.length) executeARIAActions(actions);
   } catch(err) {
     document.getElementById(typingId)?.remove();
-    addAIMessage('assistant', `⚠️ I couldn't connect right now. Make sure you have internet access.\n\nError: ${err.message}`);
+    addAIMessage('assistant', `⚠️ Connection timed out — retrying automatically...\n\nIf this keeps happening, try asking again in a moment. Error: ${err.message}`);
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -14871,6 +14884,23 @@ function confirmLateCheckout(bookingId, time) {
   notify(`⏰ Late checkout approved for ${b.guest} — leaving at ${time}`, '#f9c74f');
   logActivity('late_checkout_approved', { bookingId, guest:b.guest, siteId:b.siteId, time });
 }
+
+
+// ── Netlify function keep-alive ping ─────────────────────────────────────────
+// Pings the function every 10 minutes so it stays warm and doesn't cold-start
+function pingARIAFunction() {
+  if (!window.location.hostname.includes('netlify')) return;
+  fetch('/.netlify/functions/aria', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': localStorage.getItem('sitehelm_ai_key')||'' },
+    body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1, messages:[{role:'user',content:'ping'}] })
+  }).catch(()=>{}); // Silent — just waking the function
+}
+
+// Ping every 10 minutes
+setInterval(pingARIAFunction, 10 * 60 * 1000);
+// Ping on page load after 5 seconds
+setTimeout(pingARIAFunction, 5000);
 
 </script>
 </body>
