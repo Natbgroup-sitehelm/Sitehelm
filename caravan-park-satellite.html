@@ -324,10 +324,10 @@
   #search-input:focus { border-color: var(--accent); }
 
   /* ── Dashboard stat cards ── */
-  .dash-stat-card { background:#fff; border-radius:12px; padding:16px 18px; box-shadow:0 1px 6px rgba(0,0,0,0.07); display:flex; flex-direction:column; gap:4px; }
-  .dash-stat-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:4px; }
-  .dash-stat-val { font-size:28px; font-weight:900; color:#1a1a1a; line-height:1; }
-  .dash-stat-lbl { font-size:11px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; }
+  .dash-stat-card { background:#fff; border-radius:10px; padding:10px 14px; box-shadow:0 1px 4px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:2px; }
+  .dash-stat-icon { width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; margin-bottom:3px; }
+  .dash-stat-val { font-size:22px; font-weight:900; color:#1a1a1a; line-height:1; }
+  .dash-stat-lbl { font-size:10px; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:0.3px; }
   .dash-stat-sub { font-size:11px; color:#999; margin-top:1px; }
   .dash-stat-link { font-size:11px; color:#1B4332; font-weight:700; cursor:pointer; margin-top:4px; display:block; }
   .today-item { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f5f5f5; cursor:pointer; }
@@ -336,7 +336,7 @@
   .today-item-name { font-size:13px; font-weight:700; color:#1a1a1a; }
   .today-item-meta { font-size:11px; color:#888; margin-top:1px; }
   .today-action-btn { padding:4px 12px; border-radius:6px; border:1px solid; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap; }
-  .dc-site-col { position:sticky; left:0; background:#fff; z-index:5; padding:3px 10px; font-size:11px; font-weight:600; color:#333; border-right:1px solid #f0f0f0; white-space:nowrap; min-width:70px; border-bottom:1px solid #f5f5f5; }
+  .dc-site-col { position:sticky; left:0; background:#fff; z-index:5; padding:3px 6px; font-size:10px; font-weight:600; color:#333; border-right:1px solid #f0f0f0; white-space:nowrap; min-width:40px; max-width:40px; border-bottom:1px solid #f5f5f5; }
   .dc-date-head { text-align:center; font-size:9px; color:#999; padding:3px 2px; min-width:32px; width:32px; background:#fff; position:sticky; top:0; z-index:8; border-bottom:1px solid #e0e0e0; }
   .dc-date-head.dc-today { color:#1B4332; font-weight:800; background:rgba(82,183,136,0.15); border-radius:4px; }
   .dc-cell { width:32px; min-width:32px; height:28px; border-bottom:1px solid #f5f5f5; border-right:1px solid #f9f9f9; cursor:pointer; position:relative; }
@@ -349,7 +349,7 @@
   .dc-cell.seg-mid   .dc-bar { left:0; right:0; border-radius:0; }
   .dc-cell.seg-end   .dc-bar { right:50%; border-radius:0 3px 3px 0; }
   .dc-cell.seg-solo  .dc-bar { border-radius:3px; }
-  .dc-group-row td { background:#f9fafb; font-size:10px; font-weight:800; color:#1B4332; text-transform:uppercase; letter-spacing:0.5px; padding:4px 10px; border-bottom:1px solid #e8e8e8; cursor:pointer; }
+  .dc-group-row td { background:#f9fafb; font-size:9px; font-weight:800; color:#1B4332; text-transform:uppercase; letter-spacing:0.5px; padding:3px 6px; border-bottom:1px solid #e8e8e8; cursor:pointer; }
   .dc-occ-row td { background:#f0f7f0; text-align:center; font-size:9px; font-weight:700; padding:2px 0; border-bottom:2px solid #e0e0e0; color:#1B4332; }
   .dc-occ-high { color:#FF9800; }
   .dc-occ-full { color:#f44336; }
@@ -1019,18 +1019,18 @@
     </div>
 
     <!-- Top stat cards -->
-    <div id="dash-stat-bar" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:16px 20px 0"></div>
+    <div id="dash-stat-bar" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;padding:10px 16px 0"></div>
 
     <!-- Main body: chart + today panel -->
-    <div style="display:flex;gap:16px;padding:16px 20px;flex:1;min-height:0;flex-wrap:wrap">
+    <div style="display:flex;gap:12px;padding:10px 16px;flex:1;min-height:0;flex-wrap:wrap">
 
       <!-- Left: mini booking chart + in-house table -->
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:14px">
 
         <!-- Mini booking chart -->
         <div style="background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);overflow:hidden">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;gap:8px">
-            <div style="font-size:15px;font-weight:800;color:#1a1a1a">Booking Chart</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;gap:8px">
+            <div style="font-size:13px;font-weight:800;color:#1a1a1a">Booking Chart</div>
             <div style="display:flex;gap:8px;align-items:center">
               <button onclick="dashChartShift(-7)" style="background:#f5f5f5;border:none;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;color:#555">◀</button>
               <span id="dash-chart-range" style="font-size:12px;font-weight:600;color:#555;white-space:nowrap"></span>
@@ -4379,7 +4379,7 @@ function renderDashMiniChart() {
   Object.entries(grouped).forEach(([type,sites])=>{
     if (!sites.length) return;
     const tc = TYPE[type]||{label:type,icon:'•'};
-    html += `<tr class="dc-group-row"><td colspan="${days.length+1}">${tc.icon} ${tc.label} Sites (${sites.length})</td></tr>`;
+    html += `<tr class="dc-group-row"><td colspan="${days.length+1}">${tc.icon} ${tc.label} (${sites.length})</td></tr>`;
     sites.forEach(site=>{
       html += `<tr><td class="dc-site-col">${site.label}</td>`;
       days.forEach(d=>{
