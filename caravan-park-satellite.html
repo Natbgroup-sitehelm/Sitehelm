@@ -3984,6 +3984,8 @@ function openBookingDetail(b) {
           ? `<button class="btn btn-outline" style="flex:1;padding:11px;border-color:#557a63;color:#557a63;cursor:default">📅 Arriving in ${daysToArrival} day${daysToArrival!==1?'s':''}</button>`
           : b.status === 'checked-in' && b.checkIn > TODAY
           ? `<button class="btn btn-outline" style="flex:1;padding:11px;border-color:#f97316;color:#f97316" onclick="undoCheckIn('${b.id}')" title="This guest was checked in before their arrival date">⚠️ Undo Early Check-In</button>`
+          : b.status === 'checked-in'
+          ? `<button class="btn btn-outline" style="flex:1;padding:11px;border-color:#ef4444;color:#ef4444" onclick="performCheckout('${b.id}')">👋 Check Out</button>`
           : ''}
         ${!b.paid
           ? `<button class="btn btn-green" style="flex:1;padding:11px" onclick="openTakePayment('${b.id}')">💳 Take Payment</button>`
@@ -8291,7 +8293,7 @@ function renderSiteManager() {
 
   // Column header
   const colHead = `<div class="site-mgr-head">
-    <div>ID</div><div>Label</div><div>Type</div><div>Price/night</div><div>Lat</div><div>Lng</div><div></div>
+    <div>ID</div><div>Label</div><div>Type</div><div>Price/night</div><div>Lat</div><div>Lng</div><div title="Auto-mark dirty on checkout">🧹 Auto</div><div></div>
   </div>`;
 
   let html = colHead;
@@ -8326,6 +8328,7 @@ function renderSiteManager() {
       html += `<div style="margin-bottom:4px">`;
       html += sites.map(site => {
         const hasBookings = bookings.some(b => b.siteId === site.id && b.status !== 'cancelled');
+        const autoDirty   = getSiteAutoDirty(site.id);
         return `<div class="site-mgr-row" id="smr-${site.id}">
           <div style="font-family:monospace;font-weight:700;color:var(--accent);font-size:12px">${site.id}</div>
           <input class="site-mgr-input" value="${site.label}" onchange="updateSiteField('${site.id}','label',this.value)" placeholder="Label">
@@ -8344,6 +8347,14 @@ function renderSiteManager() {
           </div>
           <div style="font-size:10px;color:var(--text-dim);font-family:monospace">
             ${site.lng ? site.lng.toFixed(4) : '—'}
+          </div>
+          <!-- Auto-dirty toggle -->
+          <div style="display:flex;align-items:center;gap:4px" title="Auto-mark dirty on checkout">
+            <span style="font-size:10px;color:var(--text-dim)">🧹</span>
+            <div onclick="setSiteAutoDirty('${site.id}',${!autoDirty});renderSiteManager()"
+              style="width:32px;height:16px;border-radius:8px;background:${autoDirty?'#52B788':'#2a2a2a'};border:1px solid ${autoDirty?'#52B788':'#557a63'};cursor:pointer;position:relative;transition:background 0.2s">
+              <div style="position:absolute;top:2px;${autoDirty?'right:2px':'left:2px'};width:10px;height:10px;border-radius:50%;background:${autoDirty?'#fff':'#557a63'};transition:all 0.2s"></div>
+            </div>
           </div>
           <div style="display:flex;gap:4px">
             ${hasBookings
@@ -8718,11 +8729,15 @@ function setHkStatus(siteId, status, note='') {
 
 // Auto-mark sites dirty when a guest checks out
 function autoMarkDirtyOnCheckout() {
+  // Now handled per-site via getSiteAutoDirty toggle
+  // Still run for any sites that have auto-dirty enabled and checkouts today
   const now = new Date().toISOString().split('T')[0];
   bookings.forEach(b => {
-    if (b.checkOut === now && b.status !== 'cancelled') {
+    if (b.checkOut === now && b.status !== 'cancelled' && getSiteAutoDirty(b.siteId)) {
       const current = getSiteHkStatus(b.siteId);
-      if (current === 'clean') setHkStatus(b.siteId, 'dirty', `Auto: ${b.guest} checked out`);
+      if (current === 'clean' || current === 'inspected') {
+        setHkStatus(b.siteId, 'dirty', `Auto: ${b.guest} checkout day`);
+      }
     }
   });
 }
@@ -14529,6 +14544,166 @@ function openDemoModal() {
     </div>
   `);
 }
+
+
+// ══════════════════════════════════════════════════════════════
+// AUTO DIRTY ON CHECKOUT + LATE CHECKOUT DETECTION
+// ══════════════════════════════════════════════════════════════
+
+// Default auto-dirty by site type
+const AUTO_DIRTY_DEFAULTS = {
+  cabin:     true,
+  ensuite:   true,
+  villa:     true,
+  glamping:  true,
+  powered:   false,
+  unpowered: false,
+  overflow:  false,
+};
+
+function getSiteAutoDirty(siteId) {
+  // Check per-site override first
+  try {
+    const overrides = JSON.parse(localStorage.getItem('sitehelm_auto_dirty')||'{}');
+    if (overrides[siteId] !== undefined) return overrides[siteId];
+  } catch(e) {}
+  // Fall back to type default
+  const site = SITES.find(s=>s.id===siteId);
+  return AUTO_DIRTY_DEFAULTS[site?.type] ?? false;
+}
+
+function setSiteAutoDirty(siteId, value) {
+  try {
+    const overrides = JSON.parse(localStorage.getItem('sitehelm_auto_dirty')||'{}');
+    overrides[siteId] = value;
+    localStorage.setItem('sitehelm_auto_dirty', JSON.stringify(overrides));
+  } catch(e) {}
+}
+
+function triggerAutoDirty(bookingId, source='checkout') {
+  const b = bookings.find(x=>x.id===bookingId);
+  if (!b) return;
+  if (!getSiteAutoDirty(b.siteId)) return;
+  const current = getSiteHkStatus(b.siteId);
+  if (current === 'clean' || current === 'inspected') {
+    setHkStatus(b.siteId, 'dirty', `Auto: ${b.guest} ${source}`);
+    const site = SITES.find(s=>s.id===b.siteId);
+    const tc   = TYPE[site?.type]||{icon:'📍'};
+    notify(`🧹 ${tc.icon} ${b.siteId} marked for cleaning — ${b.guest} checked out`, '#e55a00');
+    logActivity('hk_auto_dirty', { siteId:b.siteId, guest:b.guest, source });
+  }
+}
+
+// ── Manual checkout action ────────────────────────────────────────────────────
+function performCheckout(bookingId) {
+  const b = bookings.find(x=>x.id===bookingId);
+  if (!b) return;
+
+  openModal(`👋 Check Out — ${b.guest}`, `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="background:linear-gradient(135deg,#1B4332,#2D6A4F);border-radius:10px;padding:14px 16px">
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px">${b.guest}</div>
+        <div style="font-size:12px;color:#a7d4bc">${b.siteId} · ${fmtDate(b.checkOut)}</div>
+        ${!b.paid?`<div style="margin-top:8px;background:rgba(249,199,74,0.2);border-radius:6px;padding:6px 10px;font-size:12px;color:#f9c74f;font-weight:700">⚠️ Outstanding balance: A$${(b.total||0).toFixed(2)}</div>`:''}
+      </div>
+
+      <div class="form-field">
+        <label>Staff Notes on Departure</label>
+        <textarea id="co-notes" rows="2" placeholder="e.g. Left site clean, great guests. Dog dug up lawn near fence…"
+          style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none;resize:vertical;font-family:inherit;border-left:3px solid #2D6A4F">${b.staffNotes||''}</textarea>
+      </div>
+
+      ${getSiteAutoDirty(b.siteId) ? `
+      <div style="background:rgba(229,90,0,0.1);border:1px solid #e55a0044;border-radius:8px;padding:10px 12px;font-size:12px;color:#e55a00">
+        🧹 <strong>${b.siteId}</strong> will be automatically marked for cleaning after checkout
+      </div>` : ''}
+
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-green" onclick="confirmCheckout('${b.id}')">✅ Confirm Check Out</button>
+      </div>
+    </div>
+  `);
+}
+
+function confirmCheckout(bookingId) {
+  const notes = document.getElementById('co-notes')?.value.trim();
+  const idx   = bookings.findIndex(x=>x.id===bookingId);
+  if (idx===-1) return;
+
+  bookings[idx].status      = 'cancelled'; // mark as departed
+  bookings[idx].checkedOutAt = new Date().toISOString();
+  if (notes) bookings[idx].staffNotes = notes;
+  localStorage.setItem('bookings_cache', JSON.stringify(bookings));
+
+  // Auto-dirty if toggled on
+  triggerAutoDirty(bookingId, 'manual checkout');
+
+  // Award loyalty points
+  checkoutAwardPoints(bookingId);
+
+  closeModal();
+  refreshAll();
+  buildMarkers();
+  notify(`👋 ${bookings[idx]?.guest||'Guest'} checked out — see you next time!`, '#52B788');
+  logActivity('check_out', { bookingId, guest:bookings[idx]?.guest, siteId:bookings[idx]?.siteId });
+}
+
+// ── Late checkout detection ───────────────────────────────────────────────────
+let _lateCheckoutAlertsFired = new Set();
+
+function checkLateCheckouts() {
+  const now    = new Date();
+  const today  = TODAY;
+  const hour   = now.getHours();
+  const minute = now.getMinutes();
+
+  // Only run between 10am and 6pm
+  if (hour < 10 || hour > 18) return;
+
+  const checkoutTime = 10 * 60; // 10:00am in minutes
+  const nowMins      = hour * 60 + minute;
+
+  bookings
+    .filter(b => b.checkOut === today && b.status === 'checked-in')
+    .forEach(b => {
+      const site  = SITES.find(s=>s.id===b.siteId);
+      const tc    = TYPE[site?.type]||{icon:'📍'};
+
+      // At exactly 10am — auto-dirty and alert
+      if (nowMins >= checkoutTime && nowMins < checkoutTime+5) {
+        const atTimeKey = b.id+'_checkout_time';
+        if (!_lateCheckoutAlertsFired.has(atTimeKey)) {
+          _lateCheckoutAlertsFired.add(atTimeKey);
+          // Auto-dirty if toggled
+          triggerAutoDirty(b.id, 'checkout time reached');
+          // Alert
+          notify(`⏰ Checkout time — ${b.guest} on ${tc.icon} ${b.siteId} is due to check out now`, '#f9c74f');
+        }
+      }
+
+      // Late — more than 30 mins past checkout
+      if (nowMins >= checkoutTime + 30) {
+        const lateKey = b.id+'_late_checkout';
+        if (!_lateCheckoutAlertsFired.has(lateKey)) {
+          _lateCheckoutAlertsFired.add(lateKey);
+          const minsLate = nowMins - checkoutTime;
+          const hrsLate  = Math.floor(minsLate/60);
+          const minLbl   = hrsLate > 0 ? `${hrsLate}h ${minsLate%60}m` : `${minsLate}m`;
+          notify(`🔴 Late checkout — ${b.guest} on ${tc.icon} ${b.siteId} is ${minLbl} overdue`, '#ef4444');
+          // Add to maintenance-style alert for ARIA
+          logActivity('late_checkout', { bookingId:b.id, guest:b.guest, siteId:b.siteId, minsLate });
+        }
+      }
+    });
+}
+
+// Run every minute
+setInterval(checkLateCheckouts, 60000);
+// Check on load
+setTimeout(checkLateCheckouts, 4000);
+
+// Update autoMarkDirtyOnCheckout to use per-site toggle
 
 </script>
 </body>
