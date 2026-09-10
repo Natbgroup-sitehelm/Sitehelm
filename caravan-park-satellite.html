@@ -14101,6 +14101,107 @@ function renderGuestInfo(b) {
   </div>`;
 }
 
+
+function loadDemoData() {
+  const today = TODAY;
+  const d = n => addDays(today, n);
+  const yd7=d(-7),yd5=d(-5),yd3=d(-3),yd2=d(-2),yd=d(-1);
+  const tm=d(1),d2=d(2),d3=d(3),d4=d(4),d5=d(5),d6=d(6),d7=d(7),d8=d(8),d9=d(9),d10=d(10),d12=d(12),d14=d(14),d16=d(16),d18=d(18),d21=d(21);
+
+  const demoBookings = [
+    { id:'DM001', guest:'Johnson & Partners', siteId:'C1', checkIn:yd7, checkOut:d3, status:'checked-in', paid:true, total:1200, guests:2, children:0, phone:'0434 678 901', email:'johnsons@outlook.com', vehicle:'Silver Mercedes Sprinter', rego:'3GHI890', notes:'30th anniversary stay — returning for 4th year.', staffNotes:'Always bring wine for reception. VIP guests.' },
+    { id:'DM002', guest:'Thompson Family', siteId:'P1', checkIn:yd2, checkOut:d3, status:'checked-in', paid:false, total:385, guests:2, children:3, hasPet:true, petType:'dog', petCount:1, petNotes:'Golden retriever, very friendly', phone:'0412 345 678', email:'thompson@gmail.com', vehicle:'White Toyota Landcruiser', rego:'1ABC234', expectedArrival:'2:00pm', notes:'3 kids aged 5, 8 and 11.' },
+    { id:'DM003', guest:'Dave Nguyen', siteId:'U2', checkIn:yd, checkOut:tm, status:'checked-in', paid:true, total:76, guests:1, phone:'0445 789 012', vehicle:'Blue Suzuki Swift', rego:'4JKL123' },
+    { id:'DM004', guest:'Sarah Williams', siteId:'E3', checkIn:yd2, checkOut:d3, status:'checked-in', paid:false, total:450, guests:2, phone:'0423 567 890', email:'sarah.w@hotmail.com', vehicle:'Red Subaru Outback', rego:'2DEF567', notes:'Quiet site preferred.' },
+    { id:'DM005', guest:'Brown Family', siteId:'P4', checkIn:yd3, checkOut:d4, status:'checked-in', paid:true, total:616, guests:2, children:3, phone:'0456 890 123', email:'browns@gmail.com', vehicle:'Grey Ford Ranger + Coromal', rego:'5MNO456' },
+    { id:'DM006', guest:'Chen & Lee', siteId:'G1', checkIn:yd, checkOut:d2, status:'checked-in', paid:true, total:285, guests:2, phone:'0478 012 345', email:'chenfamily@gmail.com', notes:'Anniversary dinner booked locally.' },
+    { id:'DM007', guest:'Jake Morrison', siteId:'U6', checkIn:yd2, checkOut:d5, status:'checked-in', paid:true, total:196, guests:1, phone:'0467 555 123', vehicle:'Old green Hilux', rego:'7HJK321' },
+    { id:'DM008', guest:'Patel Family', siteId:'E1', checkIn:yd3, checkOut:d2, status:'checked-in', paid:true, total:625, guests:2, children:1, hasPet:true, petType:'cat', petCount:1, petNotes:'Indoor cat stays in van', phone:'0401 345 678', vehicle:'White Jayco Journey', rego:'8PQR654' },
+    { id:'DM009', guest:'Wilson Family', siteId:'P2', checkIn:yd5, checkOut:today, status:'checked-in', paid:true, total:550, guests:2, children:2, phone:'0490 234 567', email:'wilsons@bigpond.com', vehicle:'White Coromal Caravan', rego:'9VWX345', staffNotes:'Left site immaculate.' },
+    { id:'DM010', guest:'Rita Okafor', siteId:'U1', checkIn:yd2, checkOut:today, status:'checked-in', paid:false, total:152, guests:1, phone:'0401 888 777', notes:'Cash payment on departure' },
+    { id:'DM011', guest:'Fletcher & Co', siteId:'C2', checkIn:yd7, checkOut:today, status:'checked-in', paid:true, total:840, guests:2, phone:'0434 678 901', vehicle:'Dark blue Range Rover', rego:'FLC 007', staffNotes:'Left a 5-star Google review.' },
+    { id:'DM012', guest:'Lauren Mitchell', siteId:'P5', checkIn:today, checkOut:d3, status:'confirmed', paid:true, total:330, guests:2, phone:'0467 901 234', email:'lauren.m@gmail.com', expectedArrival:'10:00am', vehicle:'White Hyundai Tucson', rego:'LMT 999' },
+    { id:'DM013', guest:'Anderson Family', siteId:'P6', checkIn:today, checkOut:d5, status:'confirmed', paid:false, total:440, guests:2, children:2, phone:'0412 456 789', email:'andersons@outlook.com', expectedArrival:'2:00pm', vehicle:'White Toyota Prado', rego:'AND 123', notes:'Kids 6 and 9.' },
+    { id:'DM014', guest:'Mark Davies', siteId:'P7', checkIn:today, checkOut:d3, status:'confirmed', paid:true, total:165, guests:1, phone:'0489 123 456', expectedArrival:'After hours', vehicle:'Black Nissan Navara', rego:'8STU012', notes:'FIFO worker — gate code sent via SMS' },
+    { id:'DM015', guest:'Young Couple', siteId:'G2', checkIn:today, checkOut:d4, status:'confirmed', paid:true, total:380, guests:2, phone:'0423 567 891', expectedArrival:'6:00pm', notes:'Honeymoon!' },
+    { id:'DM016', guest:"O'Brien Family", siteId:'C1', checkIn:tm, checkOut:d7, status:'confirmed', paid:true, total:720, guests:2, children:3, hasPet:true, petType:'dog', petCount:2, phone:'0445 789 012', expectedArrival:'1:00pm', notes:'Wheelchair access required day 3.' },
+    { id:'DM017', guest:'Nguyen Family', siteId:'P3', checkIn:tm, checkOut:d5, status:'confirmed', paid:false, total:220, guests:2, children:2, phone:'0456 890 123', expectedArrival:'3:00pm' },
+    { id:'DM018', guest:'Campbell Sisters', siteId:'E2', checkIn:tm, checkOut:d7, status:'confirmed', paid:true, total:525, guests:4, phone:'0467 901 234', expectedArrival:'12:00pm', notes:'40th birthday — champagne on arrival.' },
+    { id:'DM019', guest:'Martinez Family', siteId:'P8', checkIn:d2, checkOut:d7, status:'confirmed', paid:true, total:550, guests:2, children:3, phone:'0478 012 345', expectedArrival:'2:00pm' },
+    { id:'DM020', guest:'Taylor & Smith', siteId:'U3', checkIn:d2, checkOut:d5, status:'confirmed', paid:false, total:228, guests:2, phone:'0489 123 456' },
+    { id:'DM021', guest:'Roberts Family', siteId:'P9', checkIn:d3, checkOut:d7, status:'confirmed', paid:true, total:440, guests:2, children:2, hasPet:true, petType:'dog', petCount:1, petNotes:'Schnauzer named Biscuit', phone:'0412 999 888', expectedArrival:'2:00pm', notes:'Returning guests — 3rd visit.' },
+    { id:'DM022', guest:'Kumar & Family', siteId:'C2', checkIn:d3, checkOut:d10, status:'confirmed', paid:true, total:840, guests:2, children:2, phone:'0423 111 222', expectedArrival:'1:00pm' },
+    { id:'DM023', guest:'Lee Family', siteId:'U4', checkIn:d4, checkOut:d7, status:'confirmed', paid:false, total:228, guests:2, children:1, phone:'0434 333 444' },
+    { id:'DM024', guest:'Papadopoulos Group', siteId:'P10', checkIn:d5, checkOut:d9, status:'confirmed', paid:true, total:880, guests:6, phone:'0445 444 555', notes:'Large extended family group.' },
+    { id:'DM025', guest:'Walsh Couple', siteId:'E1', checkIn:d5, checkOut:d8, status:'confirmed', paid:true, total:375, guests:2, phone:'0456 555 666', vehicle:'Charcoal BMW X5', rego:'WLS 555' },
+    { id:'DM026', guest:'Harris & Co', siteId:'U5', checkIn:d6, checkOut:d9, status:'confirmed', paid:false, total:228, guests:3, phone:'0467 666 777', notes:'Fishing trip — leave before 5am daily.' },
+    { id:'DM027', guest:'Singh Family', siteId:'P2', checkIn:d7, checkOut:d12, status:'confirmed', paid:true, total:550, guests:2, children:3, phone:'0478 777 888', expectedArrival:'3:00pm' },
+    { id:'DM028', guest:'Clarke Retirement Trip', siteId:'C2', checkIn:d7, checkOut:d14, status:'confirmed', paid:true, total:840, guests:2, phone:'0489 888 999', notes:'First big lap of Australia!', staffNotes:'Give them park map and attractions guide.' },
+    { id:'DM029', guest:'Scott Family', siteId:'P6', checkIn:d8, checkOut:d12, status:'confirmed', paid:false, total:440, guests:2, children:4, phone:'0412 000 111', notes:'4 kids aged 3-12. Near playground please.' },
+    { id:'DM030', guest:'Evans & Morris', siteId:'U7', checkIn:d9, checkOut:d12, status:'confirmed', paid:true, total:228, guests:2, phone:'0423 111 333', vehicle:'Silver VW Campervan', rego:'EVM 42' },
+    { id:'DM031', guest:'Nguyen-Tran Family', siteId:'E2', checkIn:d10, checkOut:d14, status:'confirmed', paid:true, total:500, guests:2, children:2, phone:'0434 222 444' },
+    { id:'DM032', guest:'Baker School Group', siteId:'P3', checkIn:d12, checkOut:d14, status:'confirmed', paid:true, total:220, guests:8, phone:'0445 333 555', notes:'8 students + 2 teachers.' },
+    { id:'DM033', guest:'Wilson (Return Stay)', siteId:'P1', checkIn:d14, checkOut:d18, status:'confirmed', paid:false, total:440, guests:2, children:2, phone:'0490 234 567', notes:'Return booking — requested P1.' },
+    { id:'DM034', guest:'Green Family', siteId:'C1', checkIn:d14, checkOut:d21, status:'confirmed', paid:true, total:840, guests:2, children:1, hasPet:true, petType:'dog', petCount:1, petNotes:'Labrador named Cheese', phone:'0456 444 666' },
+    { id:'DM035', guest:'Thompson (Return)', siteId:'P5', checkIn:d16, checkOut:d21, status:'confirmed', paid:true, total:550, guests:2, children:3, hasPet:true, petType:'dog', petCount:1, phone:'0412 345 678', notes:'Return guests!' },
+    { id:'DM036', guest:'Jackson & Partners', siteId:'U8', checkIn:d18, checkOut:d21, status:'confirmed', paid:false, total:228, guests:2, phone:'0467 555 888' },
+  ];
+
+  localStorage.setItem('bookings_cache', JSON.stringify(demoBookings));
+
+  const hkStatus = {};
+  hkStatus['P2']  = { status:'dirty',     updatedAt: new Date(Date.now()-3*3600000).toISOString() };
+  hkStatus['U1']  = { status:'dirty',     updatedAt: new Date(Date.now()-1.5*3600000).toISOString() };
+  hkStatus['C2']  = { status:'dirty',     updatedAt: new Date(Date.now()-2*3600000).toISOString() };
+  hkStatus['P9']  = { status:'cleaning',  updatedAt: new Date(Date.now()-25*60000).toISOString() };
+  hkStatus['U8']  = { status:'cleaning',  updatedAt: new Date(Date.now()-15*60000).toISOString() };
+  hkStatus['U6']  = { status:'inspected', updatedAt: new Date(Date.now()-10*60000).toISOString() };
+  hkStatus['P10'] = { status:'inspected', updatedAt: new Date(Date.now()-20*60000).toISOString() };
+  hkStatus['FAC_AB1'] = { status:'dirty',    updatedAt: new Date(Date.now()-4*3600000).toISOString() };
+  hkStatus['FAC_LN1'] = { status:'cleaning', updatedAt: new Date(Date.now()-30*60000).toISOString() };
+  localStorage.setItem('hk_status', JSON.stringify(hkStatus));
+
+  const maintJobs = [
+    { id:'DM_MJ001', location:'P7', locationType:'site', category:'plumbing', priority:'urgent', description:'Water connection leaking badly — puddle forming. Needs immediate attention.', reportedBy:'Sarah (Housekeeping)', assignedTo:'', status:'open', createdAt: new Date(Date.now()-2*3600000).toISOString(), updatedAt: new Date(Date.now()-2*3600000).toISOString(), resolutionNotes:'' },
+    { id:'DM_MJ002', location:'Main Ablution Block', locationType:'facility', category:'electrical', priority:'high', description:'Light in shower cubicle 2 flickering — trip hazard.', reportedBy:'Mike (Cleaner)', assignedTo:'', status:'inprogress', createdAt: new Date(Date.now()-24*3600000).toISOString(), updatedAt: new Date(Date.now()-3600000).toISOString(), resolutionNotes:'Ordered replacement ballast — arriving tomorrow' },
+    { id:'DM_MJ003', location:'C1', locationType:'site', category:'appliance', priority:'high', description:'Air conditioner not cooling — guests complaining. Unit rattles.', reportedBy:'Reception', assignedTo:'', status:'open', createdAt: new Date(Date.now()-5*3600000).toISOString(), updatedAt: new Date(Date.now()-5*3600000).toISOString(), resolutionNotes:'' },
+    { id:'DM_MJ004', location:'Car Park', locationType:'general', category:'grounds', priority:'normal', description:'Pothole near P3 entrance — growing after rain.', reportedBy:'Dave (Maintenance)', assignedTo:'', status:'open', createdAt: new Date(Date.now()-48*3600000).toISOString(), updatedAt: new Date(Date.now()-48*3600000).toISOString(), resolutionNotes:'' },
+    { id:'DM_MJ005', location:'Laundry Room', locationType:'facility', category:'appliance', priority:'normal', description:'Washing machine 2 not spinning — leaves clothes soaking wet.', reportedBy:'Guest complaint', assignedTo:'', status:'parts', createdAt: new Date(Date.now()-72*3600000).toISOString(), updatedAt: new Date(Date.now()-24*3600000).toISOString(), resolutionNotes:'Pump ordered — 3-5 days. Out of order sign placed.' },
+    { id:'DM_MJ006', location:'P12', locationType:'site', category:'electrical', priority:'low', description:'Power post light not working — cosmetic only.', reportedBy:'Mike (Cleaner)', assignedTo:'', status:'open', createdAt: new Date(Date.now()-96*3600000).toISOString(), updatedAt: new Date(Date.now()-96*3600000).toISOString(), resolutionNotes:'' },
+    { id:'DM_MJ007', location:'E2', locationType:'site', category:'structural', priority:'normal', description:'Flyscreen on ensuite door torn — insects getting in.', reportedBy:'Guest request', assignedTo:'', status:'resolved', createdAt: new Date(Date.now()-36*3600000).toISOString(), updatedAt: new Date(Date.now()-12*3600000).toISOString(), resolutionNotes:'Replaced flyscreen. Guest very happy.' },
+  ];
+  localStorage.setItem('sitehelm_maintenance', JSON.stringify(maintJobs));
+
+  const waitlist = [
+    { id:'WL001', guest:'Roberts Family', phone:'0412 999 888', checkIn:d(5), checkOut:d(10), guests:4, prefType:'powered', notes:'Happy with any powered site. Called twice — very keen.', status:'waiting', createdAt: new Date(Date.now()-2*86400000).toISOString() },
+    { id:'WL002', guest:'McPherson Couple', phone:'0423 888 777', checkIn:d(7), checkOut:d(14), guests:2, prefType:'ensuite', notes:'Prefer ensuite — flexible on dates', status:'waiting', createdAt: new Date(Date.now()-86400000).toISOString() },
+    { id:'WL003', guest:'Yates & Family', phone:'0434 777 666', checkIn:d(10), checkOut:d(14), guests:4, prefType:'cabin', notes:'School holidays — need cabin for family of 4', status:'waiting', createdAt: new Date(Date.now()-3600000).toISOString() },
+  ];
+  localStorage.setItem('sitehelm_waitlist', JSON.stringify(waitlist));
+
+  const activity = [
+    { id:'AL001', type:'maintenance_reported', location:'P7', category:'plumbing', guest:'', siteId:'P7', timestamp: new Date(Date.now()-20*60000).toISOString() },
+    { id:'AL002', type:'hk_status_update', siteId:'P9', note:'Cleaning started', guest:'', timestamp: new Date(Date.now()-25*60000).toISOString() },
+    { id:'AL003', type:'booking_created', guest:'Young Couple', siteId:'G2', timestamp: new Date(Date.now()-45*60000).toISOString() },
+    { id:'AL004', type:'check_in', guest:'Chen & Lee', siteId:'G1', timestamp: new Date(Date.now()-60*60000).toISOString() },
+    { id:'AL005', type:'payment_taken', guest:'Thompson Family', siteId:'P1', timestamp: new Date(Date.now()-90*60000).toISOString() },
+    { id:'AL006', type:'check_in', guest:'Jake Morrison', siteId:'U6', timestamp: new Date(Date.now()-2*3600000).toISOString() },
+    { id:'AL007', type:'maintenance_reported', location:'C1', category:'appliance', guest:'', siteId:'C1', timestamp: new Date(Date.now()-5*3600000).toISOString() },
+    { id:'AL008', type:'booking_created', guest:'Lauren Mitchell', siteId:'P5', timestamp: new Date(Date.now()-6*3600000).toISOString() },
+    { id:'AL009', type:'check_out', guest:'Fletcher & Co', siteId:'C2', timestamp: new Date(Date.now()-7*3600000).toISOString() },
+    { id:'AL010', type:'payment_taken', guest:'Johnson & Partners', siteId:'C1', timestamp: new Date(Date.now()-8*3600000).toISOString() },
+  ];
+  localStorage.setItem('sitehelm_activity_log', JSON.stringify(activity));
+
+  bookings = demoBookings;
+  refreshAll();
+  buildMarkers();
+  renderSidebar();
+  closeModal();
+  notify('🎉 Demo data loaded — 36 bookings, 7 maintenance jobs, 3 waitlist guests!', '#52B788');
+  switchTab('dashboard');
+}
+
 </script>
 </body>
 </html>
