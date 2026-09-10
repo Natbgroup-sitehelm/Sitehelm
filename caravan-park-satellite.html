@@ -1334,6 +1334,34 @@ app.post('/refund', async (req, res) => {
         <label>Direct Booking Link (for nurture emails)</label>
         <input type="text" id="park-booking-url" placeholder="https://yourpark.com.au/book" oninput="saveParkInfo()">
       </div>
+
+      <!-- Guest collection toggles -->
+      <div style="border-top:1px solid var(--border-light);margin-top:12px;padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px">Guest Information Collection</div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-light);margin-bottom:8px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text-primary)">👶 Collect children information</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Ask how many children and age groups when booking</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer">
+            <input type="checkbox" id="park-collect-children" onchange="saveParkInfo()" style="opacity:0;width:0;height:0">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-light)">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text-primary)">🐕 Collect pet information</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Ask about pets when booking — toggle off if pets are not permitted</div>
+          </div>
+          <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer">
+            <input type="checkbox" id="park-collect-pets" onchange="saveParkInfo()" style="opacity:0;width:0;height:0">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
       <div id="park-info-status" style="font-size:12px;color:#52B788;margin-top:4px"></div>
     </div>
 
@@ -3543,6 +3571,7 @@ function closeModalOverlay(e) {
 
 // ── New Booking ───────────────────────────────────────────────────────────────
 function openNewBooking(prefillSite=null) {
+  setTimeout(initGuestInfoFields, 150);
   // Build site options without disabling — availability checked dynamically against selected dates
   const siteOptions = SITES.map(s=>
     `<option value="${s.id}" ${prefillSite?.id===s.id?'selected':''}>
@@ -3605,12 +3634,63 @@ function openNewBooking(prefillSite=null) {
       </div>
       <div class="form-row">
         <div class="form-field">
-          <label>Guests</label>
+          <label>Guests (Adults)</label>
           <input type="number" id="f-guests" value="2" min="1" max="12">
         </div>
         <div class="form-field">
           <label>Vehicle / Rig</label>
           <input type="text" id="f-vehicle" placeholder="e.g. Jayco Expanda">
+        </div>
+      </div>
+
+      <!-- Children section — shown only if park has collectChildren enabled -->
+      <div id="f-children-section" style="display:none">
+        <div class="form-row">
+          <div class="form-field">
+            <label>👶 Children</label>
+            <input type="number" id="f-children" value="0" min="0" max="10" placeholder="0">
+          </div>
+          <div class="form-field">
+            <label>Age Groups</label>
+            <select id="f-children-ages" multiple style="height:62px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:12px;outline:none;width:100%">
+              <option value="infant">🍼 Infants (under 2)</option>
+              <option value="toddler">🧒 Toddlers (2–5)</option>
+              <option value="child">👦 Children (6–12)</option>
+              <option value="teen">🧑 Teenagers (13–17)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pets section — shown only if park has collectPets enabled -->
+      <div id="f-pets-section" style="display:none">
+        <div class="form-row">
+          <div class="form-field">
+            <label>🐕 Bringing a Pet?</label>
+            <select id="f-pet-bringing" onchange="togglePetDetails()" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+              <option value="no">No pets</option>
+              <option value="yes">Yes — bringing a pet</option>
+            </select>
+          </div>
+          <div class="form-field" id="f-pet-type-field" style="display:none">
+            <label>Pet Type</label>
+            <select id="f-pet-type" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+              <option value="dog">🐕 Dog</option>
+              <option value="cat">🐈 Cat</option>
+              <option value="bird">🦜 Bird</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" id="f-pet-details-row" style="display:none">
+          <div class="form-field">
+            <label>Number of Pets</label>
+            <input type="number" id="f-pet-count" value="1" min="1" max="5">
+          </div>
+          <div class="form-field">
+            <label>Pet Notes</label>
+            <input type="text" id="f-pet-notes" placeholder="e.g. Large labrador, very friendly">
+          </div>
         </div>
       </div>
       <div class="form-row">
@@ -3822,6 +3902,7 @@ function saveBooking(payNow) {
     phone: document.getElementById('f-phone').value,
     checkIn: ci, checkOut: co,
     guests: +document.getElementById('f-guests').value,
+    ...getGuestInfoFromForm(),
     vehicle: document.getElementById('f-vehicle').value,
     licence: document.getElementById('f-licence')?.value.trim() || '',
     licenceState: document.getElementById('f-licence-state')?.value || '',
@@ -3946,6 +4027,8 @@ function openBookingDetail(b) {
           ${tc.icon} ${site?.label||b.siteId} — ${tc.label}
         </span>
         <span style="color:#a7d4bc;font-size:12px">${b.guests||1} guest${b.guests!==1?'s':''}</span>
+        ${b.children>0?`<span style="color:#a7d4bc;font-size:12px">· 👶 ${b.children} child${b.children!==1?'ren':''}</span>`:''}
+        ${b.hasPet?`<span style="color:#a7d4bc;font-size:12px">· ${{dog:'🐕',cat:'🐈',bird:'🦜',other:'🐾'}[b.petType]||'🐾'} ${b.petCount||1} pet${b.petCount!==1?'s':''}</span>`:''}
         ${b.paid && b.total?`<span style="color:#74c69d;font-size:12px;margin-left:auto">A$${(b.total).toFixed(2)} total</span>`:''}
       </div>
     </div>
@@ -3982,6 +4065,24 @@ function openBookingDetail(b) {
       ${b.licence?`<div style="display:flex;justify-content:space-between;padding:5px 0">
         <span style="font-size:12px;color:var(--accent);font-weight:600">Licence</span>
         <span style="font-size:13px;color:var(--text-primary);font-weight:500;font-family:monospace">${b.licence}${b.licenceState?' ('+b.licenceState+')':''}</span>
+      </div>`:''}
+    </div>` : ''}
+
+    <!-- ③b PETS — only if hasPet -->
+    ${b.hasPet ? `
+    <div style="background:var(--bg-card);border-radius:10px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--border-light);border-left:3px solid #f97316">
+      <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">🐾 Pets On Site</div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border-light)">
+        <span style="font-size:12px;color:var(--accent);font-weight:600">Pet Type</span>
+        <span style="font-size:13px;color:var(--text-primary);font-weight:500">${{dog:'🐕 Dog',cat:'🐈 Cat',bird:'🦜 Bird',other:'🐾 Other'}[b.petType]||'🐾 Pet'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:5px 0${b.petNotes?';border-bottom:1px solid var(--border-light)':''}">
+        <span style="font-size:12px;color:var(--accent);font-weight:600">Number</span>
+        <span style="font-size:13px;color:var(--text-primary);font-weight:500">${b.petCount||1}</span>
+      </div>
+      ${b.petNotes?`<div style="padding:5px 0">
+        <span style="font-size:12px;color:var(--accent);font-weight:600">Notes</span>
+        <div style="font-size:12px;color:var(--text-primary);margin-top:3px">${b.petNotes}</div>
       </div>`:''}
     </div>` : ''}
 
@@ -7245,12 +7346,14 @@ let journeyQueue = JSON.parse(localStorage.getItem('journey_queue') || '[]'); //
 
 function saveParkInfo() {
   const info = {
-    wifiName:   document.getElementById('park-wifi-name')?.value  || '',
-    wifiPass:   document.getElementById('park-wifi-pass')?.value  || '',
-    phone:      document.getElementById('park-phone')?.value      || '',
-    checkinTime:document.getElementById('park-checkin-time')?.value|| '2:00pm',
-    reviewUrl:  document.getElementById('park-review-url')?.value || '',
-    bookingUrl: document.getElementById('park-booking-url')?.value|| '',
+    wifiName:        document.getElementById('park-wifi-name')?.value   || '',
+    wifiPass:        document.getElementById('park-wifi-pass')?.value   || '',
+    phone:           document.getElementById('park-phone')?.value       || '',
+    checkinTime:     document.getElementById('park-checkin-time')?.value|| '2:00pm',
+    reviewUrl:       document.getElementById('park-review-url')?.value  || '',
+    bookingUrl:      document.getElementById('park-booking-url')?.value || '',
+    collectChildren: document.getElementById('park-collect-children')?.checked || false,
+    collectPets:     document.getElementById('park-collect-pets')?.checked     || false,
   };
   localStorage.setItem('park_info_'+getActivePark().id, JSON.stringify(info));
   const el = document.getElementById('park-info-status');
@@ -7261,12 +7364,15 @@ function loadParkInfo() {
   const raw = localStorage.getItem('park_info_'+getActivePark().id);
   const info = raw ? JSON.parse(raw) : {};
   const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val||''; };
+  const setChk = (id, val) => { const el=document.getElementById(id); if(el) el.checked=!!val; };
   set('park-wifi-name',    info.wifiName);
   set('park-wifi-pass',    info.wifiPass);
   set('park-phone',        info.phone);
   set('park-checkin-time', info.checkinTime || '2:00pm');
   set('park-review-url',   info.reviewUrl);
   set('park-booking-url',  info.bookingUrl);
+  setChk('park-collect-children', info.collectChildren);
+  setChk('park-collect-pets',     info.collectPets);
   return info;
 }
 
@@ -9227,7 +9333,14 @@ document.addEventListener('mousemove', e => {
 
 // ── Online Booking Page ───────────────────────────────────────────────────────
 function getBookingPageUrl() {
-  return window.location.href.replace(/[^/]*$/, '') + 'book.html';
+  const base   = window.location.href.replace(/[^/]*$/, '') + 'book.html';
+  const info   = getParkInfo();
+  const park   = getActivePark();
+  const params = new URLSearchParams();
+  params.set('park', park.name);
+  if (info.collectChildren) params.set('children', 'true');
+  if (info.collectPets)     params.set('pets', 'true');
+  return `${base}?${params.toString()}`;
 }
 
 function openBookingPage() {
@@ -13434,7 +13547,7 @@ DEPARTURES TODAY (${departing.length}):
 ${departing.map(b=>`  • ${b.guest} from ${b.siteId}${!b.paid?' ⚠️ OWES A$'+(b.total||0).toFixed(2):''}`).join('\n')||'  None'}
 
 IN-HOUSE GUESTS (${inHouse.length}):
-${inHouse.map(b=>`  • ${b.guest} on ${b.siteId} until ${fmtDate(b.checkOut)} (${nights(today,b.checkOut)} nights left)${!b.paid?' ⚠️ UNPAID':''}`).join('\n')||'  None'}
+${inHouse.map(b=>`  • ${b.guest} on ${b.siteId} until ${fmtDate(b.checkOut)} (${nights(today,b.checkOut)} nights left)${!b.paid?' ⚠️ UNPAID':''}${b.hasPet?' 🐾 '+( b.petCount||1)+' '+(b.petType||'pet'):''}${b.children>0?' 👶 '+b.children+' child'+( b.children!==1?'ren':''):''}`).join('\n')||'  None'}
 
 ═══ UPCOMING ═══
 TOMORROW (${arrivingTomorrow.length} arrivals):
@@ -15055,6 +15168,64 @@ setTimeout(pingARIAFunction, 5000);
     }
   });
 })();
+
+// ══════════════════════════════════════════════════════════════
+// CHILDREN & PETS — Guest Information
+// ══════════════════════════════════════════════════════════════
+
+function initGuestInfoFields() {
+  const info = getParkInfo();
+  const childSec = document.getElementById('f-children-section');
+  const petSec   = document.getElementById('f-pets-section');
+  if (childSec) childSec.style.display = info.collectChildren ? '' : 'none';
+  if (petSec)   petSec.style.display   = info.collectPets     ? '' : 'none';
+}
+
+function togglePetDetails() {
+  const bringing = document.getElementById('f-pet-bringing')?.value === 'yes';
+  const typeField   = document.getElementById('f-pet-type-field');
+  const detailsRow  = document.getElementById('f-pet-details-row');
+  if (typeField)  typeField.style.display  = bringing ? '' : 'none';
+  if (detailsRow) detailsRow.style.display = bringing ? '' : 'none';
+}
+
+function getGuestInfoFromForm() {
+  const info     = getParkInfo();
+  const result   = {};
+  if (info.collectChildren) {
+    result.children     = parseInt(document.getElementById('f-children')?.value||'0') || 0;
+    const agesEl        = document.getElementById('f-children-ages');
+    result.childrenAges = agesEl ? Array.from(agesEl.selectedOptions).map(o=>o.value) : [];
+  }
+  if (info.collectPets) {
+    const bringing      = document.getElementById('f-pet-bringing')?.value === 'yes';
+    result.hasPet       = bringing;
+    result.petType      = bringing ? (document.getElementById('f-pet-type')?.value||'dog') : '';
+    result.petCount     = bringing ? (parseInt(document.getElementById('f-pet-count')?.value||'1')||1) : 0;
+    result.petNotes     = bringing ? (document.getElementById('f-pet-notes')?.value.trim()||'') : '';
+  }
+  return result;
+}
+
+function renderGuestInfo(b) {
+  if (!b) return '';
+  const parts = [];
+  if (b.children > 0) {
+    const ageLabels = { infant:'under 2', toddler:'2–5', child:'6–12', teen:'13–17' };
+    const ages = b.childrenAges?.length ? ` (${b.childrenAges.map(a=>ageLabels[a]||a).join(', ')})` : '';
+    parts.push(`👶 ${b.children} child${b.children!==1?'ren':''}${ages}`);
+  }
+  if (b.hasPet) {
+    const petIcons = { dog:'🐕', cat:'🐈', bird:'🦜', other:'🐾' };
+    const icon = petIcons[b.petType] || '🐾';
+    parts.push(`${icon} ${b.petCount} ${b.petType||'pet'}${b.petCount!==1?'s':''}${b.petNotes?' — '+b.petNotes:''}`);
+  }
+  if (!parts.length) return '';
+  return `<div style="margin-top:8px;padding:8px 10px;background:rgba(82,183,136,0.06);border-radius:7px;border:1px solid var(--border-light)">
+    ${parts.map(p=>`<div style="font-size:12px;color:var(--text-muted)">${p}</div>`).join('')}
+  </div>`;
+}
+
 </script>
 </body>
 </html>
