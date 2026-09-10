@@ -1304,64 +1304,7 @@ app.post('/refund', async (req, res) => {
       <div id="email-log-list" style="max-height:180px;overflow-y:auto"></div>
     </div>
 
-    <div class="settings-card">
-      <h3>🌿 Park Information (used in welcome messages)</h3>
-      <p style="font-size:12px;color:#557a63;margin-bottom:12px">This info appears in the arrival day SMS and pre-arrival email automatically.</p>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="form-field">
-          <label>WiFi Network Name</label>
-          <input type="text" id="park-wifi-name" placeholder="ParkGuest" oninput="saveParkInfo()">
-        </div>
-        <div class="form-field">
-          <label>WiFi Password</label>
-          <input type="text" id="park-wifi-pass" placeholder="Billabong22" oninput="saveParkInfo()">
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="form-field">
-          <label>Reception Phone</label>
-          <input type="text" id="park-phone" placeholder="08 9xxx xxxx" oninput="saveParkInfo()">
-        </div>
-        <div class="form-field">
-          <label>Check-in Time</label>
-          <input type="text" id="park-checkin-time" placeholder="2:00pm" oninput="saveParkInfo()">
-        </div>
-      </div>
-      <div class="form-field">
-        <label>Google Review Link</label>
-        <input type="text" id="park-review-url" placeholder="https://g.page/r/your-park/review" oninput="saveParkInfo()">
-        <p style="font-size:11px;color:#557a63;margin:4px 0 0">Get this from Google Business Profile → Ask for reviews → Copy link</p>
-      </div>
-      <div class="form-field">
-        <label>Direct Booking Link (for nurture emails)</label>
-        <input type="text" id="park-booking-url" placeholder="https://yourpark.com.au/book" oninput="saveParkInfo()">
-      </div>
 
-      <!-- Guest collection toggles -->
-      <div style="border-top:1px solid var(--border-light);margin-top:12px;padding-top:12px">
-        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px">Guest Information Collection</div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-light);margin-bottom:8px">
-          <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text-primary)">👶 Age group detail for children</div>
-            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Show infant/toddler/child/teen age selector when booking</div>
-          </div>
-          <input type="checkbox" id="park-collect-children" onchange="saveParkInfo()"
-            style="width:20px;height:20px;cursor:pointer;accent-color:#52B788;flex-shrink:0;margin-left:12px">
-        </div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-light)">
-          <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text-primary)">🐕 Collect pet information</div>
-            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Ask about pets when booking — toggle off if pets are not permitted</div>
-          </div>
-          <input type="checkbox" id="park-collect-pets" onchange="saveParkInfo()"
-            style="width:20px;height:20px;cursor:pointer;accent-color:#52B788;flex-shrink:0;margin-left:12px">
-        </div>
-      </div>
-
-      <div id="park-info-status" style="font-size:12px;color:#52B788;margin-top:4px"></div>
-    </div>
 
     <!-- Arrival Guide Customisation -->
     <div class="settings-card">
@@ -1802,6 +1745,65 @@ app.post('/refund', async (req, res) => {
 
   <!-- SETTINGS PANEL -->
   <div id="settings-panel">
+
+    <div class="settings-card">
+      <h3>🌿 Park Information (used in welcome messages)</h3>
+      <p style="font-size:12px;color:#557a63;margin-bottom:12px">This info appears in the arrival day SMS and pre-arrival email automatically.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-field">
+          <label>WiFi Network Name</label>
+          <input type="text" id="park-wifi-name" placeholder="ParkGuest" oninput="saveParkInfo()">
+        </div>
+        <div class="form-field">
+          <label>WiFi Password</label>
+          <input type="text" id="park-wifi-pass" placeholder="Billabong22" oninput="saveParkInfo()">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-field">
+          <label>Reception Phone</label>
+          <input type="text" id="park-phone" placeholder="08 9xxx xxxx" oninput="saveParkInfo()">
+        </div>
+        <div class="form-field">
+          <label>Check-in Time</label>
+          <input type="text" id="park-checkin-time" placeholder="2:00pm" oninput="saveParkInfo()">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Google Review Link</label>
+        <input type="text" id="park-review-url" placeholder="https://g.page/r/your-park/review" oninput="saveParkInfo()">
+        <p style="font-size:11px;color:#557a63;margin:4px 0 0">Get this from Google Business Profile → Ask for reviews → Copy link</p>
+      </div>
+      <div class="form-field">
+        <label>Direct Booking Link (for nurture emails)</label>
+        <input type="text" id="park-booking-url" placeholder="https://yourpark.com.au/book" oninput="saveParkInfo()">
+      </div>
+
+      <!-- Guest collection toggles -->
+      <div style="border-top:1px solid var(--border-light);margin-top:12px;padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px">Guest Information Collection</div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-light);margin-bottom:8px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text-primary)">👶 Age group detail for children</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Show infant/toddler/child/teen age selector when booking</div>
+          </div>
+          <input type="checkbox" id="park-collect-children" onchange="saveParkInfo()"
+            style="width:20px;height:20px;cursor:pointer;accent-color:#52B788;flex-shrink:0;margin-left:12px">
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-light)">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text-primary)">🐕 Collect pet information</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Ask about pets when booking — toggle off if pets are not permitted</div>
+          </div>
+          <input type="checkbox" id="park-collect-pets" onchange="saveParkInfo()"
+            style="width:20px;height:20px;cursor:pointer;accent-color:#52B788;flex-shrink:0;margin-left:12px">
+        </div>
+      </div>
+
+      <div id="park-info-status" style="font-size:12px;color:#52B788;margin-top:4px"></div>
+    </div>
 
     <!-- AI Assistant Settings -->
     <div class="settings-card" style="border:2px solid #52B788;background:linear-gradient(180deg,rgba(27,67,50,0.3) 0%,var(--settings-bg) 100%)">
