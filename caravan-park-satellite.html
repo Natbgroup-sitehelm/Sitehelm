@@ -344,7 +344,7 @@
   .dc-cell.dc-today-col::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:#52B788; opacity:0.5; pointer-events:none; }
   .dc-cell.dc-available:hover { background:rgba(82,183,136,0.2); }
   .dc-bar { position:absolute; top:3px; left:1px; right:1px; bottom:3px; border-radius:3px; display:flex; align-items:center; overflow:hidden; }
-  .dc-bar-label { font-size:8px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 3px; color:#fff; }
+  .dc-bar-label { font-size:8px; font-weight:700; white-space:nowrap; padding:0 4px; color:#fff; position:sticky; left:2px; z-index:2; pointer-events:none; text-shadow:0 1px 2px rgba(0,0,0,0.3); }
   .dc-cell.seg-start .dc-bar { left:50%; border-radius:3px 0 0 3px; }
   .dc-cell.seg-mid   .dc-bar { left:0; right:0; border-radius:0; }
   .dc-cell.seg-end   .dc-bar { right:50%; border-radius:0 3px 3px 0; }
@@ -4418,7 +4418,7 @@ function renderDashMiniChart() {
         const isToday=d===TODAY;
         const seg=booking?gridSegment(site.id,d,booking):'solo';
         const color=BAR_COLORS[status]||'';
-        const showLbl=seg==='start'||seg==='solo';
+        const showLbl = booking && (seg==='start'||seg==='mid'||seg==='solo');
         const gShort=booking?booking.guest.split(' ')[0]:'';
         let cls=`dc-cell${isToday?' dc-today-col':''} ${status==='available'?'dc-available':''}`;
         if(booking) cls+=` seg-${seg}`;
