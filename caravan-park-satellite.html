@@ -3645,22 +3645,20 @@ function openNewBooking(prefillSite=null) {
         </div>
       </div>
 
-      <!-- Children section — shown only if park has collectChildren enabled -->
-      <div id="f-children-section" style="display:none">
-        <div class="form-row">
-          <div class="form-field">
-            <label>👶 Children</label>
-            <input type="number" id="f-children" value="0" min="0" max="10" placeholder="0">
-          </div>
-          <div class="form-field">
-            <label>Age Groups</label>
-            <select id="f-children-ages" multiple style="height:62px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:12px;outline:none;width:100%">
-              <option value="infant">🍼 Infants (under 2)</option>
-              <option value="toddler">🧒 Toddlers (2–5)</option>
-              <option value="child">👦 Children (6–12)</option>
-              <option value="teen">🧑 Teenagers (13–17)</option>
-            </select>
-          </div>
+      <!-- Children — always show number, age groups only if toggle enabled -->
+      <div class="form-row">
+        <div class="form-field">
+          <label>👶 Children (under 18)</label>
+          <input type="number" id="f-children" value="0" min="0" max="10" placeholder="0">
+        </div>
+        <div class="form-field" id="f-children-ages-field" style="display:none">
+          <label>Age Groups</label>
+          <select id="f-children-ages" multiple style="height:62px;padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:12px;outline:none;width:100%">
+            <option value="infant">🍼 Infants (under 2)</option>
+            <option value="toddler">🧒 Toddlers (2–5)</option>
+            <option value="child">👦 Children (6–12)</option>
+            <option value="teen">🧑 Teenagers (13–17)</option>
+          </select>
         </div>
       </div>
 
@@ -15203,10 +15201,12 @@ setTimeout(pingARIAFunction, 5000);
 
 function initGuestInfoFields() {
   const info = getParkInfo();
-  const childSec = document.getElementById('f-children-section');
-  const petSec   = document.getElementById('f-pets-section');
-  if (childSec) childSec.style.display = info.collectChildren ? '' : 'none';
-  if (petSec)   petSec.style.display   = info.collectPets     ? '' : 'none';
+  // Age groups only shown if park has collectChildren enabled
+  const agesField = document.getElementById('f-children-ages-field');
+  if (agesField) agesField.style.display = info.collectChildren ? '' : 'none';
+  // Pets section shown if park has collectPets enabled
+  const petSec = document.getElementById('f-pets-section');
+  if (petSec) petSec.style.display = info.collectPets ? '' : 'none';
 }
 
 function togglePetDetails() {
