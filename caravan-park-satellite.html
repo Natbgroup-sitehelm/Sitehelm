@@ -1342,13 +1342,11 @@ app.post('/refund', async (req, res) => {
 
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-light);margin-bottom:8px">
           <div>
-            <div style="font-size:13px;font-weight:700;color:var(--text-primary)">👶 Collect children information</div>
-            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Ask how many children and age groups when booking</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text-primary)">👶 Age group detail for children</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Show infant/toddler/child/teen age selector when booking</div>
           </div>
-          <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer">
-            <input type="checkbox" id="park-collect-children" onchange="saveParkInfo()" style="opacity:0;width:0;height:0">
-            <span class="toggle-slider"></span>
-          </label>
+          <input type="checkbox" id="park-collect-children" onchange="saveParkInfo()"
+            style="width:20px;height:20px;cursor:pointer;accent-color:#52B788;flex-shrink:0;margin-left:12px">
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-card);border-radius:8px;border:1px solid var(--border-light)">
@@ -1356,10 +1354,8 @@ app.post('/refund', async (req, res) => {
             <div style="font-size:13px;font-weight:700;color:var(--text-primary)">🐕 Collect pet information</div>
             <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Ask about pets when booking — toggle off if pets are not permitted</div>
           </div>
-          <label style="position:relative;display:inline-block;width:40px;height:22px;cursor:pointer">
-            <input type="checkbox" id="park-collect-pets" onchange="saveParkInfo()" style="opacity:0;width:0;height:0">
-            <span class="toggle-slider"></span>
-          </label>
+          <input type="checkbox" id="park-collect-pets" onchange="saveParkInfo()"
+            style="width:20px;height:20px;cursor:pointer;accent-color:#52B788;flex-shrink:0;margin-left:12px">
         </div>
       </div>
 
