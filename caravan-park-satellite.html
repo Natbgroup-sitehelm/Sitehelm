@@ -14567,6 +14567,273 @@ function saveAIKey() {
   notify('✅ API key saved — click Ask ARIA to get started','#52B788');
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// MAINTENANCE SYSTEM
+// ══════════════════════════════════════════════════════════════
+
+function loadMaintenanceJobs() {
+  try { return JSON.parse(localStorage.getItem('sitehelm_maintenance')||'[]'); }
+  catch(e) { return []; }
+}
+
+function saveMaintenanceJobs(jobs) {
+  localStorage.setItem('sitehelm_maintenance', JSON.stringify(jobs));
+  const open = jobs.filter(j=>j.status==='open'||j.status==='inprogress').length;
+  const tab = document.getElementById('maintenance-tab');
+  if (tab) tab.innerHTML = `🔧 Maintenance${open>0?` <span style="background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:800">${open}</span>`:''}`;
+}
+
+function renderMaintenanceBoard() {
+  const el = document.getElementById('maint-board');
+  if (!el) return;
+  const jobs = loadMaintenanceJobs();
+  const filtered = _maintFilter==='all' ? jobs : jobs.filter(j=>j.status===_maintFilter);
+
+  if (!filtered.length) {
+    el.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-dim)">
+      <div style="font-size:40px;margin-bottom:10px">✅</div>
+      <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:4px">
+        ${_maintFilter==='open'?'No open issues — all clear!':'No jobs in this category'}
+      </div>
+      <div style="font-size:12px">Use the + Report Issue button to log a new maintenance job</div>
+    </div>`;
+    return;
+  }
+
+  const sorted = [...filtered].sort((a,b)=>{
+    const pr={urgent:0,high:1,normal:2,low:3};
+    if(pr[a.priority]!==pr[b.priority]) return pr[a.priority]-pr[b.priority];
+    return new Date(b.createdAt)-new Date(a.createdAt);
+  });
+
+  el.innerHTML = sorted.map(job=>{
+    const cat = MAINT_CATS[job.category]||MAINT_CATS.other;
+    const st  = MAINT_STATUS[job.status]||MAINT_STATUS.open;
+    const pri = MAINT_PRIORITY[job.priority]||MAINT_PRIORITY.normal;
+    const ago = timeAgo(job.createdAt);
+    const staff = (() => { try { return JSON.parse(localStorage.getItem('staff_members')||'[]'); } catch(e){ return []; }})();
+    const assignedStaff = staff.find(s=>s.id===job.assignedTo);
+    return `<div class="maint-job-card" onclick="openMaintenanceJob('${job.id}')">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="font-size:24px;flex-shrink:0">${cat.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">
+            <span style="font-size:14px;font-weight:800;color:var(--text-primary)">${job.location}</span>
+            <span style="font-size:10px;font-weight:700;color:${st.color};background:${st.bg};border-radius:20px;padding:2px 8px">${st.label}</span>
+            <span style="font-size:10px;font-weight:700;color:${MAINT_PRIORITY[job.priority]?.color||'#888'}">${pri.label}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-primary);margin-bottom:6px;line-height:1.4">${job.description}</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text-muted)">
+            <span>${cat.label}</span>
+            <span>Reported ${ago}</span>
+            ${job.reportedBy?`<span>by ${job.reportedBy}</span>`:''}
+            ${assignedStaff?`<span style="color:var(--accent)">👤 ${assignedStaff.name}</span>`:'<span style="color:#f9c74f">⚠️ Unassigned</span>'}
+          </div>
+          ${job.resolutionNotes?`<div style="margin-top:6px;padding:6px 8px;background:rgba(82,183,136,0.08);border-radius:6px;font-size:11px;color:#52B788;border-left:2px solid #52B788">${job.resolutionNotes}</div>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openNewMaintenanceJob(prefillLocation='', prefillFacilityId='') {
+  const staff = (() => { try { return JSON.parse(localStorage.getItem('staff_members')||'[]'); } catch(e){ return []; }})();
+  const siteOptions = SITES.map(s=>`<option value="${s.label}">${s.label} — ${TYPE[s.type]?.label||s.type}</option>`).join('');
+  const facOptions  = FACILITIES.map(f=>`<option value="${f.name}">${f.name}</option>`).join('');
+  const staffOptions= staff.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+
+  openModal('🔧 Report Maintenance Issue', `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="form-field">
+        <label>Location</label>
+        <select id="mj-location-type" onchange="updateMaintLocationInput()" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none;margin-bottom:6px">
+          <option value="site">Site</option>
+          <option value="facility" ${prefillFacilityId?'selected':''}>Facility / Block</option>
+          <option value="general">General Area</option>
+        </select>
+        <select id="mj-location-site" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">${siteOptions}</select>
+        <select id="mj-location-facility" style="display:none;width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">${facOptions}</select>
+        <input type="text" id="mj-location-general" style="display:none;width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none" placeholder="e.g. Car park, entrance gate">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-field">
+          <label>Category</label>
+          <select id="mj-category" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+            ${Object.entries(MAINT_CATS).map(([k,v])=>`<option value="${k}">${v.icon} ${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Priority</label>
+          <select id="mj-priority" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+            <option value="urgent">🔴 Urgent</option>
+            <option value="high">🟠 High</option>
+            <option value="normal" selected>🟡 Normal</option>
+            <option value="low">🟢 Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Description</label>
+        <textarea id="mj-description" rows="3" placeholder="Describe the issue in detail…"
+          style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none;resize:vertical;font-family:inherit;line-height:1.5"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-field">
+          <label>Reported By</label>
+          <input type="text" id="mj-reporter" placeholder="Your name" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+        </div>
+        <div class="form-field">
+          <label>Assign To</label>
+          <select id="mj-assign" style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+            <option value="">Unassigned</option>${staffOptions}
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-green" onclick="submitMaintenanceJob()">🔧 Submit Job</button>
+      </div>
+    </div>
+  `);
+}
+
+function updateMaintLocationInput() {
+  const type = document.getElementById('mj-location-type')?.value;
+  document.getElementById('mj-location-site').style.display    = type==='site'     ? '' : 'none';
+  document.getElementById('mj-location-facility').style.display = type==='facility' ? '' : 'none';
+  document.getElementById('mj-location-general').style.display  = type==='general'  ? '' : 'none';
+}
+
+function submitMaintenanceJob() {
+  const locType = document.getElementById('mj-location-type')?.value;
+  const location = locType==='site'
+    ? document.getElementById('mj-location-site')?.value
+    : locType==='facility'
+    ? document.getElementById('mj-location-facility')?.value
+    : document.getElementById('mj-location-general')?.value;
+  const desc = document.getElementById('mj-description')?.value.trim();
+  if (!location) { notify('Select a location','#f9c74f'); return; }
+  if (!desc)     { notify('Describe the issue','#f9c74f'); return; }
+  const jobs = loadMaintenanceJobs();
+  const job = {
+    id:'MJ'+Date.now(), location, locationType:locType,
+    category:    document.getElementById('mj-category')?.value||'other',
+    priority:    document.getElementById('mj-priority')?.value||'normal',
+    description: desc,
+    reportedBy:  document.getElementById('mj-reporter')?.value.trim()||'',
+    assignedTo:  document.getElementById('mj-assign')?.value||'',
+    status:'open', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), resolutionNotes:'',
+  };
+  jobs.unshift(job);
+  saveMaintenanceJobs(jobs);
+  closeModal();
+  renderMaintenanceBoard();
+  notify(`🔧 Maintenance job logged — ${job.location}`, job.priority==='urgent'?'#ef4444':'#52B788');
+  logActivity('maintenance_reported',{location:job.location,category:job.category,priority:job.priority});
+}
+
+function openMaintenanceJob(id) {
+  const jobs = loadMaintenanceJobs();
+  const job  = jobs.find(j=>j.id===id);
+  if (!job) return;
+  const cat  = MAINT_CATS[job.category]||MAINT_CATS.other;
+  const st   = MAINT_STATUS[job.status]||MAINT_STATUS.open;
+  const pri  = MAINT_PRIORITY[job.priority]||MAINT_PRIORITY.normal;
+  const staff= (() => { try { return JSON.parse(localStorage.getItem('staff_members')||'[]'); } catch(e){ return []; }})();
+  const staffOptions = staff.map(s=>`<option value="${s.id}" ${s.id===job.assignedTo?'selected':''}>${s.name}</option>`).join('');
+
+  openModal(`${cat.icon} ${job.location}`, `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:700;color:${st.color};background:${st.bg};border-radius:20px;padding:4px 12px">${st.label}</span>
+        <span style="font-size:12px;font-weight:700;color:${MAINT_PRIORITY[job.priority]?.color||'#888'}">${pri.label}</span>
+        <span style="font-size:11px;color:var(--text-dim);padding:4px 0">Reported ${timeAgo(job.createdAt)}${job.reportedBy?' by '+job.reportedBy:''}</span>
+      </div>
+      <div style="background:var(--bg-card);border-radius:8px;padding:12px;border:1px solid var(--border-light);border-left:3px solid ${cat.color}">
+        <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px">${cat.icon} ${cat.label}</div>
+        <div style="font-size:13px;color:var(--text-primary);line-height:1.5">${job.description}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-field">
+          <label>Status</label>
+          <select id="mj-status-upd" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+            ${Object.entries(MAINT_STATUS).map(([k,v])=>`<option value="${k}" ${k===job.status?'selected':''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Assigned To</label>
+          <select id="mj-assign-upd" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+            <option value="">Unassigned</option>${staffOptions}
+          </select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Resolution Notes</label>
+        <textarea id="mj-resolution" rows="2" placeholder="What was done to fix it…"
+          style="width:100%;padding:9px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none;resize:vertical;font-family:inherit">${job.resolutionNotes||''}</textarea>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-green" style="flex:1" onclick="updateMaintenanceJob('${job.id}')">💾 Update Job</button>
+        <button class="btn btn-outline" style="flex:1;border-color:#ef4444;color:#ef4444" onclick="deleteMaintenanceJob('${job.id}')">🗑 Delete</button>
+      </div>
+    </div>
+  `);
+}
+
+function updateMaintenanceJob(id) {
+  const jobs = loadMaintenanceJobs();
+  const idx  = jobs.findIndex(j=>j.id===id);
+  if (idx===-1) return;
+  jobs[idx].status          = document.getElementById('mj-status-upd')?.value||jobs[idx].status;
+  jobs[idx].assignedTo      = document.getElementById('mj-assign-upd')?.value||'';
+  jobs[idx].resolutionNotes = document.getElementById('mj-resolution')?.value.trim()||'';
+  jobs[idx].updatedAt       = new Date().toISOString();
+  saveMaintenanceJobs(jobs);
+  closeModal();
+  renderMaintenanceBoard();
+  notify('✅ Maintenance job updated','#52B788');
+}
+
+function deleteMaintenanceJob(id) {
+  if (!confirm('Delete this maintenance job?')) return;
+  const jobs = loadMaintenanceJobs().filter(j=>j.id!==id);
+  saveMaintenanceJobs(jobs);
+  closeModal();
+  renderMaintenanceBoard();
+  notify('Job deleted','#74c69d');
+}
+
+// ══════════════════════════════════════════════════════════════
+// EXPORT STANDALONE HTML
+// ══════════════════════════════════════════════════════════════
+
+function exportStandaloneHtml() {
+  const allData = gatherAllData();
+  const dataScript = `<script>
+  (function(){
+    if(localStorage.getItem('_embedded_loaded')) return;
+    localStorage.setItem('_embedded_loaded','1');
+    const d = ${JSON.stringify(allData)};
+    Object.entries(d).forEach(([k,v])=>{ if(v!==null&&v!==undefined) localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v)); });
+  })();
+  <\/script>`;
+  fetch(window.location.href)
+    .then(r=>r.text())
+    .then(html=>{
+      const out = html.replace('</head>', dataScript+'</head>');
+      const blob = new Blob([out],{type:'text/html'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const park = getActivePark();
+      const now  = new Date();
+      const ts   = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}`;
+      a.download = `${(park.name||'SiteHelm').replace(/\s+/g,'_')}_standalone_${ts}.html`;
+      a.click();
+      notify('📦 Standalone HTML exported — open it on any computer','#52B788');
+    });
+}
+
 </script>
 </body>
 </html>
