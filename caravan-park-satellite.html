@@ -4600,7 +4600,7 @@ function switchTab(tab) {
   if (tab==='grid') { renderGrid(); }
   if (tab==='backup') { renderBackupPanel(); }
   if (tab==='movements') { initMovements(); }
-  if (tab==='settings') { renderSiteManager(); renderPricingDefaults(); initEmbedCode(); loadGhlSettings(); renderActiveBlocks(); initLoyaltySettings(); const sp=document.getElementById('settings-panel'); if(sp) sp.scrollTop=0; }
+  if (tab==='settings') { renderSiteManager(); renderPricingDefaults(); initEmbedCode(); loadGhlSettings(); renderActiveBlocks(); initLoyaltySettings(); loadParkInfo(); const sp=document.getElementById('settings-panel'); if(sp) sp.scrollTop=0; }
   if (tab==='housekeeping') { renderHousekeeping(); }
   if (tab==='rates') { renderRates(); }
   if (tab==='anpr') { renderAnprPlaceholder(); }
