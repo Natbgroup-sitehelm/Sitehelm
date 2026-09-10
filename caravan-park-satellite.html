@@ -13562,12 +13562,6 @@ function buildParkContext() {
   ];
   localStorage.setItem('sitehelm_activity_log', JSON.stringify(activity));
 
-  // Reload to show demo data
-  bookings = demoBookings;
-  refreshAll();
-  buildMarkers();
-  renderSidebar();
-
   closeModal();
   notify('🎉 Demo data loaded — 36 bookings, rich housekeeping, 7 maintenance jobs, 3 waitlist guests!', '#52B788');
   switchTab('map');
