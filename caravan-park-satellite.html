@@ -13539,13 +13539,8 @@ function buildParkContext() {
   // Rates
   const rates    = (() => { try { return JSON.parse(localStorage.getItem('sitehelm_rates')||'[]'); } catch(e) { return []; } })();
 
-  // Waitlist — 3 guests waiting
-  const waitlist = [
-    { id:'WL001', guest:'Roberts Family', phone:'0412 999 888', checkIn:d(5), checkOut:d(10), guests:4, prefType:'powered', notes:'Happy with any powered site. Called twice — very keen.', status:'waiting', createdAt: new Date(Date.now()-2*86400000).toISOString() },
-    { id:'WL002', guest:'McPherson Couple', phone:'0423 888 777', checkIn:d(7), checkOut:d(14), guests:2, prefType:'ensuite', notes:'Prefer ensuite — 7 night stay, flexible on dates', status:'waiting', createdAt: new Date(Date.now()-86400000).toISOString() },
-    { id:'WL003', guest:'Yates & Family', phone:'0434 777 666', checkIn:d(10), checkOut:d(14), guests:4, prefType:'cabin', notes:'School holidays — need cabin for family of 4', status:'waiting', createdAt: new Date(Date.now()-3600000).toISOString() },
-  ];
-  localStorage.setItem('sitehelm_waitlist', JSON.stringify(waitlist));
+  // Waitlist
+  const waitlist = loadWaitlist ? loadWaitlist() : [];
 
   // Activity log — rich recent history
   const activity = [
