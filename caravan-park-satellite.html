@@ -14295,6 +14295,289 @@ function renderVehicleResults() {
   }).join('');
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// ARIA AI ASSISTANT
+// ══════════════════════════════════════════════════════════════
+
+
+function toggleAIAssistant() {
+  aiPanelOpen = !aiPanelOpen;
+  const panel    = document.getElementById('ai-panel');
+  const backdrop = document.getElementById('ai-backdrop');
+  if (panel) panel.style.right = aiPanelOpen ? '0' : '-420px';
+  if (backdrop) backdrop.style.display = aiPanelOpen ? 'block' : 'none';
+  if (aiPanelOpen) {
+    if (!localStorage.getItem('sitehelm_ai_key')) {
+      if (aiMessages.length === 0) addAIMessage('assistant', '👋 Welcome to SiteHelm Assistant!\n\nTo get started you need a **free Anthropic API key**:\n\n1. Go to **console.anthropic.com**\n2. Sign up and create an API key\n3. Go to ⚙️ **Settings → AI Assistant** and paste it in\n\nOnce set up, I\'ll have complete live knowledge of your park.');
+    } else {
+      const hour = new Date().getHours();
+      const lastBriefing = localStorage.getItem('sitehelm_last_briefing');
+      if (hour >= 5 && hour <= 12 && lastBriefing !== TODAY) {
+        if (aiMessages.length === 0) generateMorningBriefing(true);
+      } else {
+        if (aiMessages.length === 0) aiGreeting();
+      }
+    }
+    setTimeout(()=>document.getElementById('ai-input')?.focus(), 350);
+    runProactiveCheck();
+  }
+}
+
+function aiGreeting() {
+  const park = getActivePark();
+  const arriving = bookings.filter(b=>b.checkIn===TODAY && b.status==='confirmed').length;
+  const departing = bookings.filter(b=>b.checkOut===TODAY && b.status==='checked-in').length;
+  const unpaid = bookings.filter(b=>!b.paid && b.status!=='cancelled').length;
+  const now = new Date();
+  const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
+  const lines = [`${greeting}, ${park.name}! I'm watching your park. Here's what's happening:`];
+  if (arriving) lines.push(`🏕️ **${arriving}** guest${arriving!==1?'s':''} arriving today`);
+  if (departing) lines.push(`👋 **${departing}** departure${departing!==1?'s':''} today`);
+  if (unpaid) lines.push(`💳 **${unpaid}** booking${unpaid!==1?'s':''} with outstanding payment`);
+  if (!arriving && !departing && !unpaid) lines.push('✅ All clear — no urgent items right now.');
+  lines.push('\nWhat can I help you with?');
+  addAIMessage('assistant', lines.join('\n'));
+}
+
+function addAIMessage(role, content) {
+  aiMessages.push({ role, content });
+  renderAIMessages();
+}
+
+function renderAIMessages() {
+  const el = document.getElementById('ai-messages');
+  if (!el) return;
+  el.innerHTML = aiMessages.map(m => {
+    const isUser = m.role === 'user';
+    const html = m.content.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
+    return `<div style="display:flex;justify-content:${isUser?'flex-end':'flex-start'}">
+      <div style="max-width:88%;padding:10px 12px;border-radius:${isUser?'12px 12px 3px 12px':'12px 12px 12px 3px'};
+        background:${isUser?'#1B4332':'var(--bg-card)'};color:${isUser?'#e8f0e9':'var(--text-primary)'};
+        border:1px solid ${isUser?'#2D6A4F':'var(--border-light)'};font-size:13px;line-height:1.5">
+        ${html}
+      </div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function callClaudeAPI(messages, retryCount=0) {
+  const apiKey = localStorage.getItem('sitehelm_ai_key') || '';
+  if (!apiKey) throw new Error('No API key set. Go to ⚙️ Settings → AI Assistant to add your Anthropic API key.');
+  const isNetlify = window.location.hostname.includes('netlify') || !window.location.protocol.includes('file');
+  const endpoint = isNetlify ? '/.netlify/functions/aria' : 'https://api.anthropic.com/v1/messages';
+  const headers = isNetlify
+    ? { 'Content-Type':'application/json','x-api-key':apiKey }
+    : { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-calls':'true' };
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(), 25000);
+    const response = await fetch(endpoint, {
+      method:'POST', headers, signal:controller.signal,
+      body: JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1000, system:buildParkContext(), messages })
+    });
+    clearTimeout(timeout);
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.content?.[0]?.text || 'No response';
+  } catch(err) {
+    if (retryCount===0 && (err.name==='AbortError'||err.message.includes('fetch'))) {
+      await new Promise(r=>setTimeout(r,1500));
+      return callClaudeAPI(messages, 1);
+    }
+    throw err;
+  }
+}
+
+async function sendAIMessage() {
+  const input = document.getElementById('ai-input');
+  const btn   = document.getElementById('ai-send-btn');
+  const msg   = input?.value.trim();
+  if (!msg) return;
+  input.value = '';
+  addAIMessage('user', msg);
+  const typingId = 'ai-typing-'+Date.now();
+  const el = document.getElementById('ai-messages');
+  if (el) { el.innerHTML += `<div id="${typingId}" style="display:flex;justify-content:flex-start"><div style="padding:10px 14px;border-radius:12px 12px 12px 3px;background:var(--bg-card);border:1px solid var(--border-light);color:var(--text-muted);font-size:13px">● ● ●</div></div>`; el.scrollTop=el.scrollHeight; }
+  if (btn) btn.disabled = true;
+  try {
+    const recent = aiMessages.slice(-10);
+    const reply  = await callClaudeAPI(recent);
+    document.getElementById(typingId)?.remove();
+    const { text, actions } = parseARIAActions(reply);
+    addAIMessage('assistant', text);
+    if (actions.length) executeARIAActions(actions);
+  } catch(err) {
+    document.getElementById(typingId)?.remove();
+    addAIMessage('assistant', `⚠️ Connection timed out — please try again.\n\nError: ${err.message}`);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function askAI(question) {
+  const input = document.getElementById('ai-input');
+  if (input) { input.value = question; sendAIMessage(); }
+}
+
+function parseARIAActions(text) {
+  const actionRegex = /\[ACTION:(\w+)([^\]]*)\]/g;
+  const actions = [];
+  let match;
+  while ((match = actionRegex.exec(text)) !== null) {
+    const type = match[1];
+    const params = {};
+    const paramRegex = /(\w+)="([^"]+)"/g;
+    let pm;
+    while ((pm = paramRegex.exec(match[2])) !== null) params[pm[1]] = pm[2];
+    actions.push({ type, params });
+  }
+  return { text: text.replace(/\[ACTION:[^\]]+\]/g,'').trim(), actions };
+}
+
+function executeARIAActions(actions) {
+  const results = [];
+  actions.forEach(a => {
+    try {
+      switch(a.type) {
+        case 'block_site': {
+          const { siteId, type='maintenance', from=TODAY, to, reason='' } = a.params;
+          if (!siteId||!to) break;
+          const blocks = loadSiteBlocks();
+          blocks.push({ id:'BL'+Date.now(), siteId, type, from, to, reason, createdAt:new Date().toISOString() });
+          saveSiteBlocks(blocks); refreshAll(); buildMarkers();
+          results.push(`✅ **${siteId}** blocked from ${fmtDate(from)} to ${fmtDate(to)}`);
+          break;
+        }
+        case 'unblock_site': {
+          const { siteId } = a.params;
+          saveSiteBlocks(loadSiteBlocks().filter(b=>b.siteId!==siteId));
+          refreshAll(); buildMarkers();
+          results.push(`✅ **${siteId}** unblocked`);
+          break;
+        }
+        case 'log_maintenance': {
+          const { location, category='other', priority='normal', description='' } = a.params;
+          const jobs = loadMaintenanceJobs();
+          jobs.unshift({ id:'MJ'+Date.now(), location, locationType:'site', category, priority, description, reportedBy:'ARIA', assignedTo:'', status:'open', createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), resolutionNotes:'' });
+          saveMaintenanceJobs(jobs);
+          results.push(`✅ Maintenance job logged — **${location}**`);
+          break;
+        }
+        case 'mark_hk_status': {
+          const { siteId, status } = a.params;
+          const all = JSON.parse(localStorage.getItem('hk_status')||'{}');
+          all[siteId] = { status, updatedAt:new Date().toISOString() };
+          localStorage.setItem('hk_status', JSON.stringify(all));
+          refreshAll();
+          results.push(`✅ **${siteId}** marked as ${status}`);
+          break;
+        }
+        case 'switch_tab': { if(a.params.tab) switchTab(a.params.tab); break; }
+      }
+    } catch(e) { results.push(`⚠️ Action failed: ${e.message}`); }
+  });
+  if (results.length) setTimeout(()=>addAIMessage('assistant',`**Actions taken:**\n${results.join('\n')}`), 400);
+}
+
+// Proactive watcher
+async function runProactiveCheck() {
+  const alerts = [];
+  const overdueUnpaid = bookings.filter(b=>b.checkOut===TODAY && b.status==='checked-in' && !b.paid);
+  overdueUnpaid.forEach(b=>alerts.push({ icon:'💳', color:'#f9c74f', bg:'rgba(249,199,74,0.1)', text:`${b.guest} (${b.siteId}) is departing today and owes A$${(b.total||0).toFixed(2)}`, action:`Ask about ${b.guest}'s payment`, actionFn:()=>askAI(`How should I handle the outstanding payment for ${b.guest} on ${b.siteId} who is checking out today?`) }));
+  let hkSt={};
+  try { hkSt=JSON.parse(localStorage.getItem('hk_status')||'{}'); } catch(e){}
+  SITES.forEach(s=>{
+    const st=hkSt[s.id];
+    if(st?.status==='dirty'&&st.updatedAt){ const hrs=(Date.now()-new Date(st.updatedAt))/3600000; if(hrs>3) alerts.push({ icon:'🧹', color:'#e55a00', bg:'rgba(229,90,0,0.1)', text:`${s.label} has been dirty for ${Math.round(hrs)} hours`, action:'What should I do?', actionFn:()=>askAI(`${s.label} has been marked dirty for ${Math.round(hrs)} hours. What should I do?`) }); }
+  });
+  renderProactiveAlerts(alerts);
+  const badge = document.getElementById('ai-alert-badge');
+  if (badge) { badge.style.display=alerts.length>0?'flex':'none'; badge.textContent=alerts.length; }
+}
+
+function renderProactiveAlerts(alerts) {
+  const el = document.getElementById('ai-alerts');
+  if (!el) return;
+  if (!alerts.length) { el.innerHTML=''; return; }
+  el.innerHTML = `<div style="padding:8px 12px 0;font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px">Needs Attention</div>` +
+  alerts.map(a=>`<div style="padding:8px 12px;border-bottom:1px solid var(--border-light);display:flex;gap:8px;align-items:flex-start;background:${a.bg}">
+    <span style="font-size:14px;flex-shrink:0">${a.icon}</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:11px;color:${a.color};font-weight:600;line-height:1.4">${a.text}</div>
+      <button onclick="(${a.actionFn.toString()})()" style="margin-top:4px;background:none;border:none;color:var(--accent);font-size:10px;cursor:pointer;padding:0;font-weight:600">${a.action} →</button>
+    </div>
+  </div>`).join('');
+}
+
+setInterval(()=>{ if(aiWatching) runProactiveCheck(); }, 15*60*1000);
+setTimeout(runProactiveCheck, 5000);
+
+// Morning Briefing
+const BRIEFING_KEY = 'sitehelm_last_briefing';
+
+async function generateMorningBriefing(force=false) {
+  const apiKey = localStorage.getItem('sitehelm_ai_key');
+  if (!apiKey) return;
+  const last = localStorage.getItem(BRIEFING_KEY);
+  if (!force && last===TODAY) return;
+  const now = new Date();
+  const hour = now.getHours();
+  if (!force && (hour<5||hour>11)) return;
+  localStorage.setItem(BRIEFING_KEY, TODAY);
+  const msgs = document.getElementById('ai-messages');
+  if (msgs) msgs.innerHTML = `<div style="padding:12px"><div style="display:flex;align-items:center;gap:10px;padding:12px;background:linear-gradient(135deg,#1B4332,#2D6A4F);border-radius:12px"><div style="font-size:24px">🤖</div><div><div style="font-size:13px;font-weight:700;color:#fff">Preparing your morning briefing…</div><div style="font-size:11px;color:#74c69d">Analysing your park data</div></div></div></div>`;
+  const briefingPrompt = `You are preparing the daily morning briefing for ${getActivePark().name}. Analyse ALL the park data and write a personalised intelligent morning briefing. Start with a warm greeting. Give Today at a glance summary. Flag the TOP 3 things needing attention today — be specific with names and site numbers. One forward-looking insight. One pattern observation. Be specific not generic. Use Australian English. Use emojis sparingly for headings only. Keep it readable.`;
+  try {
+    const isNetlify = window.location.hostname.includes('netlify')||!window.location.protocol.includes('file');
+    const endpoint = isNetlify?'/.netlify/functions/aria':'https://api.anthropic.com/v1/messages';
+    const headers = isNetlify?{'Content-Type':'application/json','x-api-key':apiKey}:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-calls':'true'};
+    const response = await fetch(endpoint,{ method:'POST', headers, body:JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1200, system:buildParkContext(), messages:[{role:'user',content:briefingPrompt}] }) });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+    const reply = data.content?.[0]?.text||'Could not generate briefing.';
+    aiMessages = [];
+    addAIMessage('assistant', reply);
+    if (msgs) msgs.innerHTML += `<div style="text-align:center;padding:8px;font-size:10px;color:var(--text-dim)">📋 Morning briefing generated ${now.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'})} · <button onclick="generateMorningBriefing(true)" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:10px;padding:0">Refresh</button></div>`;
+    const badge = document.getElementById('ai-alert-badge');
+    if (badge) { badge.style.display='flex'; badge.textContent='☀️'; }
+  } catch(err) {
+    if (msgs) msgs.innerHTML=`<div style="padding:12px;color:#ef9a9a;font-size:12px">⚠️ Could not generate briefing: ${err.message}<br><button onclick="generateMorningBriefing(true)" style="margin-top:8px;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;color:var(--accent);cursor:pointer;font-size:11px">Try Again</button></div>`;
+  }
+}
+
+function checkBriefingSchedule() {
+  const apiKey = localStorage.getItem('sitehelm_ai_key');
+  if (!apiKey) return;
+  const briefingTime = localStorage.getItem('sitehelm_briefing_time')||'07:00';
+  const [bh,bm] = briefingTime.split(':').map(Number);
+  const now = new Date();
+  const last = localStorage.getItem(BRIEFING_KEY);
+  if (now.getHours()===bh&&now.getMinutes()>=bm&&now.getMinutes()<bm+5&&last!==TODAY) generateMorningBriefing(true);
+}
+
+setInterval(checkBriefingSchedule, 60000);
+setTimeout(()=>{ const hour=new Date().getHours(); if(hour>=5&&hour<=11) generateMorningBriefing(false); }, 3000);
+
+// Keep-alive ping
+function pingARIAFunction() {
+  if (!window.location.hostname.includes('netlify')) return;
+  fetch('/.netlify/functions/aria',{ method:'POST', headers:{'Content-Type':'application/json','x-api-key':localStorage.getItem('sitehelm_ai_key')||''}, body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1,messages:[{role:'user',content:'ping'}]}) }).catch(()=>{});
+}
+setInterval(pingARIAFunction, 10*60*1000);
+setTimeout(pingARIAFunction, 5000);
+
+function saveAIKey() {
+  const key = document.getElementById('ai-api-key-input')?.value.trim();
+  if (!key) { notify('Enter your API key first','#f9c74f'); return; }
+  if (!key.startsWith('sk-ant-')) { notify('API key should start with sk-ant-','#f9c74f'); return; }
+  localStorage.setItem('sitehelm_ai_key', key);
+  const status = document.getElementById('ai-key-status');
+  if (status) status.textContent='✅ API key saved — AI Assistant is ready';
+  notify('✅ API key saved — click Ask ARIA to get started','#52B788');
+}
+
 </script>
 </body>
 </html>
