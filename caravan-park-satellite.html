@@ -14197,6 +14197,104 @@ function loadDemoData() {
   switchTab('dashboard');
 }
 
+
+// ══════════════════════════════════════════════════════════════
+// VEHICLE / REGO SEARCH
+// ══════════════════════════════════════════════════════════════
+
+function openVehicleSearch() {
+  openModal('🚗 Vehicle Search', `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <p style="font-size:13px;color:var(--text-muted);line-height:1.5;margin:0">
+        Search by rego plate, vehicle description, guest name or phone to find which site a vehicle is on.
+      </p>
+      <div style="position:relative">
+        <input type="text" id="vs-query" placeholder="e.g. 1ABC234, white van, Johnson, 0427…"
+          style="width:100%;padding:11px 14px;border:2px solid var(--accent);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:15px;outline:none;box-sizing:border-box"
+          oninput="renderVehicleResults()" autofocus>
+        <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:18px;pointer-events:none">🔍</span>
+      </div>
+      <div id="vs-results" style="min-height:60px"></div>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById('vs-query')?.focus(), 150);
+}
+
+function renderVehicleResults() {
+  const el  = document.getElementById('vs-results');
+  const raw = document.getElementById('vs-query')?.value?.trim() || '';
+  const q   = raw.toLowerCase().replace(/\s/g,'');
+  if (!el) return;
+
+  if (raw.length < 2) {
+    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text-dim);font-size:13px">Type at least 2 characters to search</div>`;
+    return;
+  }
+
+  const matches = bookings.filter(b => {
+    if (b.status === 'cancelled') return false;
+    return (
+      (b.rego||'').toLowerCase().replace(/\s/g,'').includes(q) ||
+      (b.vehicle||'').toLowerCase().includes(raw.toLowerCase()) ||
+      (b.guest||'').toLowerCase().includes(raw.toLowerCase()) ||
+      (b.phone||'').replace(/\s/g,'').includes(q) ||
+      (b.licence||'').toLowerCase().replace(/\s/g,'').includes(q)
+    );
+  }).sort((a,b) => {
+    const rank = s => s==='checked-in'?0:s==='confirmed'?1:2;
+    return rank(a.status) - rank(b.status);
+  });
+
+  if (!matches.length) {
+    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px">
+      <div style="font-size:32px;margin-bottom:8px">🔍</div>
+      No vehicle or guest found matching "<strong style="color:var(--text-primary)">${raw}</strong>"
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = matches.map(b => {
+    const site = SITES.find(s=>s.id===b.siteId);
+    const tc   = TYPE[site?.type]||{icon:'📍',label:'Site'};
+    const statusMap = {
+      'checked-in': { label:'In House',  color:'#2196F3', bg:'rgba(33,150,243,0.1)' },
+      'confirmed':  { label:'Confirmed', color:'#52B788', bg:'rgba(82,183,136,0.1)' },
+    };
+    const sm = statusMap[b.status] || { label:b.status, color:'#888', bg:'transparent' };
+    const isArriving = b.checkIn === TODAY && b.status === 'confirmed';
+
+    const matchField = (() => {
+      if ((b.rego||'').toLowerCase().replace(/\s/g,'').includes(q)) return `Rego: ${b.rego}`;
+      if ((b.vehicle||'').toLowerCase().includes(raw.toLowerCase())) return `Vehicle: ${b.vehicle}`;
+      if ((b.phone||'').replace(/\s/g,'').includes(q)) return `Phone: ${b.phone}`;
+      if ((b.licence||'').toLowerCase().replace(/\s/g,'').includes(q)) return `Licence: ${b.licence}`;
+      return null;
+    })();
+
+    return `<div onclick="closeModal();setTimeout(()=>openBookingDetail(bookings.find(x=>x.id==='${b.id}')),100)"
+      style="padding:12px 14px;background:${sm.bg};border:1px solid ${sm.color}33;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all 0.15s"
+      onmouseover="this.style.borderColor='${sm.color}'" onmouseout="this.style.borderColor='${sm.color}33'">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-size:15px;font-weight:800;color:var(--text-primary)">${b.guest}</span>
+            <span style="font-size:11px;font-weight:700;color:${sm.color};background:${sm.bg};border:1px solid ${sm.color}44;border-radius:20px;padding:2px 8px">${sm.label}</span>
+            ${isArriving?`<span style="font-size:11px;font-weight:700;color:#f9c74f;background:rgba(249,199,74,0.1);border:1px solid #f9c74f44;border-radius:20px;padding:2px 8px">Arriving Today</span>`:''}
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);display:flex;gap:12px;flex-wrap:wrap">
+            <span>${tc.icon} <strong style="color:var(--text-primary)">${b.siteId}</strong> — ${tc.label}</span>
+            <span>📅 ${fmtDate(b.checkIn)} → ${fmtDate(b.checkOut)}</span>
+            ${!b.paid?`<span style="color:#f9c74f">⚠️ Owes A$${(b.total||0).toFixed(2)}</span>`:'<span style="color:#52B788">✓ Paid</span>'}
+          </div>
+          ${matchField?`<div style="margin-top:6px;font-size:12px;color:var(--accent);font-weight:600;background:rgba(82,183,136,0.08);border-radius:5px;padding:3px 8px;display:inline-block">🚗 ${matchField}</div>`:''}
+          ${b.vehicle&&!matchField?`<div style="margin-top:4px;font-size:12px;color:var(--text-muted)">🚗 ${b.vehicle}${b.rego?' · '+b.rego:''}</div>`:''}
+        </div>
+        <div style="font-size:11px;color:var(--accent);font-weight:600;flex-shrink:0">View →</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 </script>
 </body>
 </html>
