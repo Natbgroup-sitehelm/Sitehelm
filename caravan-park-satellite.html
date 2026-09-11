@@ -9672,6 +9672,108 @@ function clearGhlLog() {
 
 const WHATS_NEW = [
   {
+    version: '2.2',
+    date: '2026-09-11',
+    tag: '🌙 New Feature',
+    tagColor: '#1B4332',
+    title: 'After Hours Guest Self Check-In',
+    items: [
+      'Guests can check themselves in after hours — no staff required, no phone calls',
+      'Each booking gets a unique secure link — click 📱 Self Check-In on any booking detail to generate it',
+      'Guest opens the link on their phone, sees their site, WiFi details and park rules, and taps "I\'ve Arrived"',
+      'Booking updates to Checked In in real time — site turns blue on the Live Map instantly',
+      'Pre-written SMS template ready to copy — send via messages, email or WhatsApp',
+      'QR code generated automatically for the check-in link — print it or show on screen',
+      'ARIA auto-sends check-in links to arriving guests at a configurable time (default 2pm) — set in Settings',
+      'Gate noticeboard QR code — print a sign for the entrance gate, guests scan and look up their own booking',
+      'Guest self-lookup page (arrive.html) — guests enter their surname and arrival date to find their booking',
+      'Gate entry code shown prominently on both check-in pages when configured in Settings',
+      'Token security system — unique 12-character token per booking, invalid tokens show an error page',
+      'Main app polls every 30 seconds and notifies when a guest self checks in',
+    ]
+  },
+  {
+    version: '2.2',
+    date: '2026-09-11',
+    tag: '👶 New Feature',
+    tagColor: '#2D6A4F',
+    title: 'Children & Pets on Bookings',
+    items: [
+      'Children count always collected on new bookings — defaults to 0',
+      'Age group detail (infants, toddlers, children, teens) optional — toggle on in Settings',
+      'Pet information (type, count, notes) — toggle on in Settings, leave off for no-pets parks',
+      'Online booking form (book.html) shows the same fields when park toggles are enabled',
+      'Booking detail card shows adults, children and pets in the site strip and a dedicated Pets section',
+      'In Park stat card on dashboard shows coloured badges: 👤 adults · 👶 children · 🐾 pets',
+      'ARIA reads guest headcount in her context — "Thompson Family on P1 — 2 adults, 3 children, 1 dog"',
+      'Housekeeping notes flag pet stays so cleaners know to do a thorough clean',
+    ]
+  },
+  {
+    version: '2.2',
+    date: '2026-09-11',
+    tag: '📊 Improvement',
+    tagColor: '#1565c0',
+    title: 'Dashboard & Booking Chart Updates',
+    items: [
+      'In Park stat card now shows live headcount badges — adults, children and pets from checked-in bookings',
+      'Booking chart bars now show guest name on every segment — sticky label stays visible as you scroll',
+      'Last night of stay shown with faded bar and diagonal stripe — signals departure tomorrow at a glance',
+      'Checkout day is correctly empty — bar ends cleanly the night before checkout, no ambiguity',
+      'Departures list shows 🔴 Overdue in red with ⏰ Action button after 10am',
+      'Map alerts strip separates overdue checkouts (red) from approved late checkouts (amber)',
+      'Overdue checkout alerts persist on map — never just a disappearing toast',
+    ]
+  },
+  {
+    version: '2.2',
+    date: '2026-09-11',
+    tag: '📋 Improvement',
+    tagColor: '#2D6A4F',
+    title: 'Booking Detail — Wider Card (700px)',
+    items: [
+      'Booking detail modal now opens at 700px — more room to breathe on desktop',
+      'Hero card: guest name and stay dates side by side — no scrolling to see check-in and check-out',
+      'Two-column body: Contact on the left, Vehicle & ID on the right',
+      'Pets section full-width with orange left border — type, count and notes at a glance',
+      'Notes row: Guest notes (amber) and Staff notes (green) side by side',
+      'All action buttons in compact rows — Check In, Take Payment, Edit, Arrival, PDF, Refund, Cancel all visible',
+      'Self Check-In button added to booking actions — opens link, QR and SMS template in one modal',
+    ]
+  },
+  {
+    version: '2.2',
+    date: '2026-09-11',
+    tag: '🔧 Improvement',
+    tagColor: '#c05a00',
+    title: 'UI Consistency & Polish',
+    items: [
+      'All tabs now use consistent header style — same font, colour and spacing throughout',
+      'Maintenance, ANPR and Movements tabs brought in line with Settings and Housekeeping card style',
+      'Bookings search bar redesigned — consistent toolbar with border, matching other tab toolbars',
+      'Movements panel header added — tab name and subtitle, same pattern as all other tabs',
+      'Favicon added to all five HTML files — SiteHelm leaf icon in browser tab',
+      'Hei Hei easter egg — those enormous googly eyes peek up from the bottom of the screen now and then',
+      'Triple-click the park name to summon Hei Hei immediately for demos',
+      'Date format fixed throughout — "arrives 12 Sep" not "arrives 2026-09-12"',
+    ]
+  },
+  {
+    version: '2.1',
+    date: '2026-09-10',
+    tag: '⚙️ Improvement',
+    tagColor: '#2D6A4F',
+    title: 'Settings — Park Information',
+    items: [
+      'Park Information card moved to the top of Settings — first thing you see',
+      'Loads correctly every time you open the Settings tab',
+      'New fields: Auto-Send Check-In Link Time and After Hours Gate Code',
+      'Children and pets collection toggles — control which questions appear on booking forms',
+      'After Hours Check-In section — print gate noticeboard and preview guest lookup page',
+      'All fields save instantly on input — no Save button needed',
+    ]
+  },
+  {
     version: '2.0',
     date: '2026-09-09',
     tag: '🤖 AI Intelligence',
