@@ -4131,6 +4131,7 @@ function openBookingDetail(b) {
       <div style="display:flex;gap:8px">
         <button class="btn btn-outline" style="flex:1" onclick="openEditBooking('${b.id}')">✏️ Edit</button>
         <button class="btn btn-outline" style="flex:1;border-color:#52B788;color:#52B788" onclick="openArrivalGuide('${b.id}')">🗺️ Arrival</button>
+        <button class="btn btn-outline" style="flex:1;border-color:#52B788;color:#52B788" onclick="openSelfCheckinModal('${b.id}')">📱 Self Check-In</button>
         <button class="btn btn-outline" style="flex:1;border-color:#74c69d;color:#74c69d" onclick="generateConfirmationPDF('${b.id}')">📄 PDF</button>
         ${b.paid ? `<button class="btn btn-outline" style="flex:1;border-color:#557a63;color:#557a63" onclick="${b.stripePaymentIntentId?`openRefundDialog('${b.id}')`:'alert(\'No Stripe payment ID — process refund manually\')'}">↩ Refund</button>` : ''}
         <button class="btn btn-red" style="flex:1" onclick="cancelBooking('${b.id}')">Cancel</button>
@@ -14889,6 +14890,120 @@ function timeAgo(isoStr) {
 }
 
 // Maintenance constants loaded above
+
+
+// ══════════════════════════════════════════════════════════════
+// SELF CHECK-IN SYSTEM
+// ══════════════════════════════════════════════════════════════
+
+function generateCheckinToken(bookingId) {
+  // Generate a unique token for this booking's self check-in link
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let token = '';
+  for (let i = 0; i < 12; i++) token += chars[Math.floor(Math.random() * chars.length)];
+  return token;
+}
+
+function getCheckinUrl(bookingId) {
+  const base = window.location.href.replace(/[^/]*$/, '');
+  const b = bookings.find(x => x.id === bookingId);
+  if (!b) return '';
+  // Generate token if not already set
+  if (!b.checkinToken) {
+    const idx = bookings.findIndex(x => x.id === bookingId);
+    bookings[idx].checkinToken = generateCheckinToken(bookingId);
+    saveBookings(bookings);
+    b.checkinToken = bookings[idx].checkinToken;
+  }
+  return `${base}checkin.html?b=${bookingId}&t=${b.checkinToken}`;
+}
+
+function openSelfCheckinModal(bookingId) {
+  const b = bookings.find(x => x.id === bookingId);
+  if (!b) return;
+  const url = getCheckinUrl(bookingId);
+  const info = getParkInfo();
+  const park = getActivePark();
+
+  openModal('📱 Self Check-In Link', `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="background:linear-gradient(135deg,#1B4332,#2D6A4F);border-radius:12px;padding:14px 16px">
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:2px">${b.guest}</div>
+        <div style="font-size:12px;color:#a7d4bc">${b.siteId} · Check in ${fmtDate(b.checkIn)}</div>
+      </div>
+
+      <p style="font-size:13px;color:var(--text-muted);margin:0;line-height:1.6">
+        Send this link to your guest. When they arrive, they tap the link on their phone, confirm their details and check themselves in. The booking updates instantly in SiteHelm.
+      </p>
+
+      <!-- URL display -->
+      <div style="background:var(--bg-card);border:1px solid var(--accent);border-radius:8px;padding:10px 12px;word-break:break-all">
+        <div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">Check-In Link</div>
+        <div id="checkin-url-display" style="font-size:11px;color:var(--text-primary);font-family:monospace">${url}</div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-green" style="flex:2" onclick="copyCheckinLink('${url}')">📋 Copy Link</button>
+        <button class="btn btn-outline" style="flex:1" onclick="window.open('${url}','_blank')">👁 Preview</button>
+      </div>
+
+      <!-- SMS template -->
+      <div style="background:var(--bg-card);border-radius:8px;padding:12px;border:1px solid var(--border-light)">
+        <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px">📱 SMS Template</div>
+        <div style="font-size:12px;color:var(--text-primary);line-height:1.6;font-style:italic">
+          "Hi ${b.guest.split(' ')[0]}! Your site at ${park.name} is ready 🌿 
+Use this link to check yourself in when you arrive: ${url}
+See you soon!"
+        </div>
+        <button class="btn btn-outline" style="margin-top:8px;width:100%;font-size:12px" onclick="copyCheckinSMS('${b.guest.split(' ')[0]}','${park.name}','${url}')">📋 Copy SMS</button>
+      </div>
+
+      <!-- QR Code -->
+      <div style="text-align:center">
+        <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px">Or guest can scan this QR code on arrival</div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}&color=1B4332&bgcolor=ffffff&qzone=2" 
+             style="border-radius:8px;border:1px solid var(--border-light)" alt="Check-in QR">
+      </div>
+    </div>
+  `, true);
+}
+
+function copyCheckinLink(url) {
+  navigator.clipboard.writeText(url).then(() => notify('✅ Check-in link copied!', '#52B788'));
+}
+
+function copyCheckinSMS(firstName, parkName, url) {
+  const sms = `Hi ${firstName}! Your site at ${parkName} is ready 🌿 Use this link to check yourself in when you arrive: ${url} See you soon!`;
+  navigator.clipboard.writeText(sms).then(() => notify('✅ SMS copied — paste into your messages app', '#52B788'));
+}
+
+// Called from checkin.html via localStorage when guest confirms arrival
+function checkForSelfCheckins() {
+  const pending = localStorage.getItem('sitehelm_selfcheckin_pending');
+  if (!pending) return;
+  try {
+    const { bookingId, token, timestamp } = JSON.parse(pending);
+    const b = bookings.find(x => x.id === bookingId);
+    if (!b || b.checkinToken !== token) return;
+    if (b.status === 'checked-in') { localStorage.removeItem('sitehelm_selfcheckin_pending'); return; }
+    // Confirm check-in
+    const idx = bookings.findIndex(x => x.id === bookingId);
+    bookings[idx].status = 'checked-in';
+    bookings[idx].checkinTime = timestamp;
+    bookings[idx].selfCheckedIn = true;
+    saveBookings(bookings);
+    localStorage.removeItem('sitehelm_selfcheckin_pending');
+    refreshAll();
+    buildMarkers();
+    notify(`🏕️ ${b.guest} self checked in — ${b.siteId}`, '#52B788');
+    logActivity('self_check_in', { guest: b.guest, siteId: b.siteId });
+  } catch(e) {}
+}
+
+// Poll for self check-ins every 30 seconds
+setInterval(checkForSelfCheckins, 30000);
+setTimeout(checkForSelfCheckins, 2000);
 
 </script>
 </body>

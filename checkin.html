@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Self Check-In</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzFCNDMzMiIvPjxwYXRoIGQ9Ik0xNiA0IEMxNiA0IDYgMTAgNiAyMCBDNiAyNiAxMCAyOCAxNiAyOCBDMjIgMjggMjYgMjYgMjYgMjAgQzI2IDEwIDE2IDQgMTYgNCBaIiBmaWxsPSIjNTJCNzg4Ii8+PC9zdmc+">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:#f4f7f5; color:#1a2e24; min-height:100vh; }
+
+  /* Hero */
+  .hero { background:linear-gradient(150deg,#1B4332 0%,#2D6A4F 100%); padding:32px 20px 28px; text-align:center; position:relative; overflow:hidden; }
+  .hero::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; background:rgba(82,183,136,0.15); border-radius:50%; }
+  .hero-logo { font-size:32px; margin-bottom:8px; }
+  .hero h1 { font-size:26px; font-weight:900; color:#fff; letter-spacing:-0.5px; }
+  .hero .park-name { font-size:14px; color:#74c69d; margin-top:4px; }
+  .hero .welcome { font-size:13px; color:#a7d4bc; margin-top:8px; line-height:1.5; max-width:320px; margin-left:auto; margin-right:auto; }
+
+  /* Site badge */
+  .site-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:30px; padding:8px 18px; margin-top:16px; }
+  .site-badge .site-icon { font-size:20px; }
+  .site-badge .site-info { text-align:left; }
+  .site-badge .site-label { font-size:18px; font-weight:900; color:#fff; }
+  .site-badge .site-type { font-size:11px; color:#a7d4bc; }
+
+  /* Stay strip */
+  .stay-strip { background:#fff; padding:14px 20px; display:grid; grid-template-columns:1fr auto 1fr; gap:4px; align-items:center; border-bottom:1px solid #e8efe8; }
+  .stay-col { text-align:center; }
+  .stay-label { font-size:10px; font-weight:700; color:#74c69d; text-transform:uppercase; letter-spacing:0.5px; }
+  .stay-val { font-size:14px; font-weight:800; color:#1B4332; margin-top:2px; }
+  .stay-nights { background:#1B4332; color:#fff; border-radius:20px; padding:6px 14px; font-size:12px; font-weight:700; text-align:center; }
+
+  /* Cards */
+  .cards { padding:16px; display:flex; flex-direction:column; gap:12px; max-width:480px; margin:0 auto; }
+  .card { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.06); border:1px solid #e8efe8; }
+  .card-header { display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid #f0f4f0; }
+  .card-icon { font-size:22px; }
+  .card-title { font-size:14px; font-weight:800; color:#1B4332; }
+  .card-body { padding:14px 16px; }
+  .info-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #f4f7f5; }
+  .info-row:last-child { border-bottom:none; }
+  .info-label { font-size:12px; color:#74c69d; font-weight:600; }
+  .info-val { font-size:13px; font-weight:700; color:#1a2e24; text-align:right; max-width:60%; }
+  .info-val.large { font-size:18px; font-weight:900; color:#1B4332; letter-spacing:2px; }
+
+  /* Check-in button */
+  .checkin-btn { width:100%; padding:18px; border:none; border-radius:16px; font-size:18px; font-weight:900; cursor:pointer; transition:all 0.2s; letter-spacing:-0.3px; }
+  .checkin-btn.ready { background:linear-gradient(135deg,#52B788,#2D6A4F); color:#fff; box-shadow:0 6px 24px rgba(82,183,136,0.4); }
+  .checkin-btn.ready:active { transform:scale(0.98); }
+  .checkin-btn.done { background:#1B4332; color:#74c69d; cursor:default; }
+  .checkin-btn.already { background:#e8f5e9; color:#2D6A4F; cursor:default; border:2px solid #52B788; }
+
+  /* Success state */
+  .success-card { background:linear-gradient(135deg,#1B4332,#2D6A4F); border-radius:16px; padding:24px; text-align:center; color:#fff; }
+  .success-icon { font-size:48px; margin-bottom:12px; }
+  .success-title { font-size:22px; font-weight:900; margin-bottom:6px; }
+  .success-sub { font-size:13px; color:#a7d4bc; line-height:1.6; }
+
+  /* Error state */
+  .error-page { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px 20px; text-align:center; background:#1B4332; }
+  .error-page .error-icon { font-size:64px; margin-bottom:16px; }
+  .error-page h1 { font-size:22px; font-weight:900; color:#fff; margin-bottom:8px; }
+  .error-page p { font-size:14px; color:#74c69d; line-height:1.6; max-width:280px; }
+
+  /* Rules list */
+  .rule-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid #f4f7f5; font-size:12px; color:#4b5563; line-height:1.5; }
+  .rule-item:last-child { border-bottom:none; }
+  .rule-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+
+  /* Footer */
+  .footer { text-align:center; padding:20px; font-size:11px; color:#74c69d; }
+
+  /* Loading */
+  .loading { min-height:100vh; display:flex; align-items:center; justify-content:center; background:#1B4332; }
+  .loading p { color:#74c69d; font-size:14px; }
+</style>
+</head>
+<body>
+
+<div id="app"><div class="loading"><p>Loading your check-in...</p></div></div>
+
+<script>
+// ── Read URL params ───────────────────────────────────────────
+const params   = new URLSearchParams(window.location.search);
+const bookingId = params.get('b') || params.get('booking');
+const token     = params.get('t') || params.get('token');
+
+// ── Load booking from localStorage (shared with main app) ────
+function loadBooking() {
+  try {
+    const all = JSON.parse(localStorage.getItem('bookings_cache') || '[]');
+    return all.find(b => b.id === bookingId);
+  } catch(e) { return null; }
+}
+
+function loadParkInfo() {
+  try {
+    const parks = JSON.parse(localStorage.getItem('parks') || '[]');
+    const activeId = localStorage.getItem('activeParkId');
+    const park = parks.find(p => p.id === activeId) || parks[0] || { name: 'Your Park' };
+    const info = JSON.parse(localStorage.getItem('park_info_' + park.id) || '{}');
+    return { park, info };
+  } catch(e) { return { park: { name: 'Your Park' }, info: {} }; }
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  return new Date(d + 'T00:00:00').toLocaleDateString('en-AU', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+}
+
+function nights(ci, co) {
+  return Math.round((new Date(co) - new Date(ci)) / 86400000);
+}
+
+function getSiteType(siteId) {
+  try {
+    const sites = JSON.parse(localStorage.getItem('custom_sites') || localStorage.getItem('site_manager_data') || '[]');
+    const site = sites.find(s => s.id === siteId || s.label === siteId);
+    if (!site) return { icon: '⛺', label: 'Site' };
+    const types = {
+      powered:   { icon: '⚡', label: 'Powered Site' },
+      unpowered: { icon: '🏕️', label: 'Unpowered Site' },
+      ensuite:   { icon: '🚿', label: 'Ensuite Site' },
+      cabin:     { icon: '🏠', label: 'Cabin' },
+      glamping:  { icon: '🌟', label: 'Glamping' },
+      villa:     { icon: '🏡', label: 'Villa' },
+    };
+    return types[site.type] || { icon: '📍', label: 'Site' };
+  } catch(e) { return { icon: '⛺', label: 'Site' }; }
+}
+
+// ── Render page ───────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+
+  // Validate
+  if (!bookingId || !token) {
+    app.innerHTML = `<div class="error-page">
+      <div class="error-icon">🔗</div>
+      <h1>Invalid Link</h1>
+      <p>This check-in link is invalid or has expired. Please contact the park for assistance.</p>
+    </div>`;
+    return;
+  }
+
+  const b = loadBooking();
+
+  if (!b) {
+    app.innerHTML = `<div class="error-page">
+      <div class="error-icon">🔍</div>
+      <h1>Booking Not Found</h1>
+      <p>We couldn't find your booking. Please contact reception for assistance.</p>
+    </div>`;
+    return;
+  }
+
+  // Validate token
+  if (b.checkinToken && b.checkinToken !== token) {
+    app.innerHTML = `<div class="error-page">
+      <div class="error-icon">🔒</div>
+      <h1>Invalid Check-In Link</h1>
+      <p>This link is not valid for this booking. Please contact the park for assistance.</p>
+    </div>`;
+    return;
+  }
+
+  // Check dates
+  const today = new Date().toISOString().split('T')[0];
+  const isCheckinDay = b.checkIn <= today && b.checkOut > today;
+  const isTooEarly = b.checkIn > today;
+  const isExpired = b.checkOut <= today;
+  const alreadyCheckedIn = b.status === 'checked-in' || b.status === 'self-checked-in';
+
+  const { park, info } = loadParkInfo();
+  const siteType = getSiteType(b.siteId);
+  const n = nights(b.checkIn, b.checkOut);
+  const wifi = info.wifiName || 'Ask at reception';
+  const pass = info.wifiPass || 'Ask at reception';
+  const phone = info.phone || '';
+  const checkinTime = info.checkinTime || '2:00pm';
+
+  // Button state
+  let btnHtml = '';
+  if (alreadyCheckedIn) {
+    btnHtml = `<button class="checkin-btn already" disabled>✅ Already Checked In</button>`;
+  } else if (isTooEarly) {
+    btnHtml = `<button class="checkin-btn done" disabled>⏰ Check-in opens ${fmtDate(b.checkIn)}</button>`;
+  } else if (isExpired) {
+    btnHtml = `<button class="checkin-btn done" disabled>This stay has ended</button>`;
+  } else {
+    btnHtml = `<button class="checkin-btn ready" onclick="doCheckIn()">🏕️ I've Arrived — Check Me In</button>`;
+  }
+
+  // Success message if just checked in
+  const justCheckedIn = localStorage.getItem('sitehelm_selfcheckin_pending');
+  const successBanner = justCheckedIn ? `
+    <div class="cards">
+      <div class="success-card">
+        <div class="success-icon">🎉</div>
+        <div class="success-title">Welcome!</div>
+        <div class="success-sub">You're officially checked in. Head to ${b.siteId} and make yourself at home. Enjoy your stay!</div>
+      </div>
+    </div>` : '';
+
+  app.innerHTML = `
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-logo">🌿</div>
+      <h1>${park.name}</h1>
+      <div class="park-name">Online Check-In</div>
+      <div class="welcome">Welcome, ${b.guest.split(' ')[0]}! We're so glad you're here.</div>
+      <div class="site-badge">
+        <div class="site-icon">${siteType.icon}</div>
+        <div class="site-info">
+          <div class="site-label">${b.siteId}</div>
+          <div class="site-type">${siteType.label}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stay strip -->
+    <div class="stay-strip">
+      <div class="stay-col">
+        <div class="stay-label">Check In</div>
+        <div class="stay-val">${fmtDate(b.checkIn)}</div>
+      </div>
+      <div class="stay-nights">${n} night${n!==1?'s':''}</div>
+      <div class="stay-col">
+        <div class="stay-label">Check Out</div>
+        <div class="stay-val">${fmtDate(b.checkOut)}</div>
+      </div>
+    </div>
+
+    ${successBanner}
+
+    <div class="cards">
+
+      <!-- Check-in button -->
+      <div class="card">
+        <div class="card-body" style="padding:16px">
+          ${btnHtml}
+          ${isCheckinDay && !alreadyCheckedIn ? `<p style="text-align:center;font-size:11px;color:#74c69d;margin-top:10px">Tap when you've arrived and found your site</p>` : ''}
+        </div>
+      </div>
+
+      <!-- Park details -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">📋</div>
+          <div class="card-title">Your Stay Details</div>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Guest Name</span>
+            <span class="info-val">${b.guest}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Site</span>
+            <span class="info-val">${b.siteId} — ${siteType.label}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Check-In Time</span>
+            <span class="info-val">From ${checkinTime}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Check-Out</span>
+            <span class="info-val">By 10:00am</span>
+          </div>
+          ${b.guests ? `<div class="info-row">
+            <span class="info-label">Guests</span>
+            <span class="info-val">${b.guests} adult${b.guests!==1?'s':''}${b.children>0?' + '+b.children+' child'+( b.children!==1?'ren':''):''}</span>
+          </div>` : ''}
+        </div>
+      </div>
+
+      <!-- WiFi -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">📶</div>
+          <div class="card-title">WiFi Details</div>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Network</span>
+            <span class="info-val">${wifi}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Password</span>
+            <span class="info-val large">${pass}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Park rules -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">📜</div>
+          <div class="card-title">Park Guidelines</div>
+        </div>
+        <div class="card-body">
+          <div class="rule-item"><div class="rule-icon">🔇</div><div>Quiet hours from 10:00pm to 7:00am. Please keep noise to a minimum out of respect for other guests.</div></div>
+          <div class="rule-item"><div class="rule-icon">🐕</div><div>Pets must be on a leash at all times and owners are responsible for cleaning up.</div></div>
+          <div class="rule-item"><div class="rule-icon">🚗</div><div>Speed limit 10km/h throughout the park. Children have priority.</div></div>
+          <div class="rule-item"><div class="rule-icon">🔥</div><div>Campfires in designated areas only. Always extinguish fully before sleeping.</div></div>
+          <div class="rule-item"><div class="rule-icon">♻️</div><div>Please use the recycling and waste facilities provided. Leave your site clean.</div></div>
+        </div>
+      </div>
+
+      <!-- Contact -->
+      ${phone ? `<div class="card">
+        <div class="card-header">
+          <div class="card-icon">📞</div>
+          <div class="card-title">Need Help?</div>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Reception</span>
+            <span class="info-val"><a href="tel:${phone}" style="color:#1B4332;text-decoration:none;font-weight:700">${phone}</a></span>
+          </div>
+          <p style="font-size:11px;color:#74c69d;margin-top:8px">If you need assistance after hours, please call or SMS this number.</p>
+        </div>
+      </div>` : ''}
+
+    </div>
+
+    <div class="footer">
+      Powered by SiteHelm · sitehelm.com.au
+    </div>
+  `;
+}
+
+// ── Check-in action ───────────────────────────────────────────
+function doCheckIn() {
+  const btn = document.querySelector('.checkin-btn.ready');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Checking you in...';
+  }
+
+  // Write pending check-in to localStorage — main app polls for this
+  const payload = {
+    bookingId,
+    token,
+    timestamp: new Date().toISOString(),
+    selfCheckedIn: true,
+  };
+  localStorage.setItem('sitehelm_selfcheckin_pending', JSON.stringify(payload));
+
+  // Also update the booking directly in localStorage
+  try {
+    const all = JSON.parse(localStorage.getItem('bookings_cache') || '[]');
+    const idx = all.findIndex(b => b.id === bookingId);
+    if (idx !== -1) {
+      all[idx].status = 'checked-in';
+      all[idx].selfCheckedIn = true;
+      all[idx].checkinTime = new Date().toISOString();
+      localStorage.setItem('bookings_cache', JSON.stringify(all));
+    }
+  } catch(e) {}
+
+  // Show success after brief delay
+  setTimeout(() => {
+    showSuccess();
+  }, 1200);
+}
+
+function showSuccess() {
+  const app = document.getElementById('app');
+  const { park, info } = loadParkInfo();
+  const b = loadBooking();
+  const siteType = getSiteType(b?.siteId || '');
+  const wifi = info.wifiName || 'Ask at reception';
+  const pass = info.wifiPass || 'Ask at reception';
+  const phone = info.phone || '';
+
+  app.innerHTML = `
+    <div class="hero" style="padding-bottom:32px">
+      <div class="hero-logo">🌿</div>
+      <h1>${park.name}</h1>
+      <div class="park-name">You're checked in!</div>
+    </div>
+
+    <div class="cards">
+
+      <div class="success-card" style="background:linear-gradient(135deg,#1B4332,#2D6A4F);border-radius:16px;padding:28px 20px;text-align:center;color:#fff">
+        <div style="font-size:56px;margin-bottom:12px">🎉</div>
+        <div style="font-size:24px;font-weight:900;margin-bottom:8px">Welcome!</div>
+        <div style="font-size:15px;color:#a7d4bc;line-height:1.6">
+          You're all checked in, ${b?.guest?.split(' ')[0] || 'Guest'}!<br>
+          Head to <strong style="color:#fff">${b?.siteId || 'your site'}</strong> and make yourself at home.
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon">📶</div>
+          <div class="card-title">WiFi — Connect Now</div>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Network</span>
+            <span class="info-val">${wifi}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Password</span>
+            <span class="info-val large">${pass}</span>
+          </div>
+        </div>
+      </div>
+
+      ${phone ? `<div class="card">
+        <div class="card-body" style="text-align:center;padding:16px">
+          <div style="font-size:13px;color:#4b5563;margin-bottom:10px">Need anything? Reception is here to help.</div>
+          <a href="tel:${phone}" style="display:inline-block;background:#1B4332;color:#fff;text-decoration:none;padding:12px 28px;border-radius:30px;font-size:15px;font-weight:700">📞 Call ${phone}</a>
+        </div>
+      </div>` : ''}
+
+      <div class="card">
+        <div class="card-body" style="text-align:center;padding:16px">
+          <div style="font-size:14px;color:#1B4332;font-weight:700;margin-bottom:4px">Check-out is by 10:00am</div>
+          <div style="font-size:12px;color:#74c69d">on ${b ? new Date(b.checkOut + 'T00:00:00').toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'}) : ''}</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="footer">Enjoy your stay · Powered by SiteHelm</div>
+  `;
+}
+
+// ── Init ──────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
