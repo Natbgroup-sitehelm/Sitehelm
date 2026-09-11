@@ -3539,7 +3539,7 @@ function renderSidebar() {
       </div>
       <div class="site-meta">${TYPE[site.type].label} · A$${site.price}/night</div>
       ${booking && status!=='booked' ? `<div class="site-guest">👤 ${booking.guest}</div>` : ''}
-      ${booking && status==='booked' ? `<div class="site-guest" style="color:#7C83FD">📅 ${booking.guest} · arrives ${booking.checkIn}</div>` : ''}
+      ${booking && status==='booked' ? `<div class="site-guest" style="color:#7C83FD">📅 ${booking.guest} · arrives ${new Date(booking.checkIn+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>` : ''}
     </div>`;
   });
   el.innerHTML = html;
