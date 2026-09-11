@@ -1779,6 +1779,30 @@ app.post('/refund', async (req, res) => {
         <label>Direct Booking Link (for nurture emails)</label>
         <input type="text" id="park-booking-url" placeholder="https://yourpark.com.au/book" oninput="saveParkInfo()">
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-field">
+          <label>🌙 Auto-Send Check-In Link Time</label>
+          <input type="time" id="park-auto-send-checkin" value="14:00" oninput="saveParkInfo()"
+            style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+          <p style="font-size:10px;color:var(--text-dim);margin-top:3px">ARIA auto-sends the self check-in link to arriving guests at this time each day</p>
+        </div>
+        <div class="form-field">
+          <label>🚪 After Hours Gate Code</label>
+          <input type="text" id="park-gate-code" placeholder="e.g. 4821" oninput="saveParkInfo()"
+            style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none;letter-spacing:3px;font-weight:700">
+          <p style="font-size:10px;color:var(--text-dim);margin-top:3px">Shown on the self check-in page for boom gate entry</p>
+        </div>
+      </div>
+
+      <!-- After hours check-in actions -->
+      <div style="border-top:1px solid var(--border-light);margin-top:12px;padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px">After Hours Check-In</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-outline" style="flex:1;font-size:12px" onclick="openGateNoticeboardPrint()">🖨️ Print Gate Noticeboard</button>
+          <button class="btn btn-outline" style="flex:1;font-size:12px" onclick="openArriveUrl()">👁 Preview Guest Lookup</button>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:6px">Print the gate noticeboard sign and stick it at your park entrance. Guests scan the QR to find their booking and check in themselves.</div>
+      </div>
 
       <!-- Guest collection toggles -->
       <div style="border-top:1px solid var(--border-light);margin-top:12px;padding-top:12px">
@@ -7380,8 +7404,10 @@ function saveParkInfo() {
     checkinTime:     document.getElementById('park-checkin-time')?.value|| '2:00pm',
     reviewUrl:       document.getElementById('park-review-url')?.value  || '',
     bookingUrl:      document.getElementById('park-booking-url')?.value || '',
-    collectChildren: document.getElementById('park-collect-children')?.checked || false,
-    collectPets:     document.getElementById('park-collect-pets')?.checked     || false,
+    collectChildren:       document.getElementById('park-collect-children')?.checked  || false,
+    collectPets:           document.getElementById('park-collect-pets')?.checked        || false,
+    autoSendCheckinTime:   document.getElementById('park-auto-send-checkin')?.value     || '14:00',
+    gateCode:              document.getElementById('park-gate-code')?.value.trim()      || '',
   };
   localStorage.setItem('park_info_'+getActivePark().id, JSON.stringify(info));
   const el = document.getElementById('park-info-status');
@@ -7401,6 +7427,8 @@ function loadParkInfo() {
   set('park-booking-url',  info.bookingUrl);
   setChk('park-collect-children', info.collectChildren);
   setChk('park-collect-pets',     info.collectPets);
+  set('park-auto-send-checkin', info.autoSendCheckinTime || '14:00');
+  set('park-gate-code',         info.gateCode || '');
   return info;
 }
 
@@ -7880,6 +7908,11 @@ function getClockOnUrl() {
 
 function openClockOnPage() {
   window.open(getClockOnUrl(), '_blank');
+}
+
+function openArriveUrl() {
+  const base = window.location.href.replace(/[^\/]*$/, '');
+  window.open(base + 'arrive.html', '_blank');
 }
 
 function generateQR() {
@@ -15004,6 +15037,168 @@ function checkForSelfCheckins() {
 // Poll for self check-ins every 30 seconds
 setInterval(checkForSelfCheckins, 30000);
 setTimeout(checkForSelfCheckins, 2000);
+
+
+// ══════════════════════════════════════════════════════════════
+// OPTION 3 — ARIA AUTO-SEND CHECK-IN LINK
+// ══════════════════════════════════════════════════════════════
+
+function checkAutoSendCheckinLinks() {
+  // Run at the configured time on arrival day — sends check-in link
+  // to any arriving guest who hasn't had it sent yet
+  const info = getParkInfo();
+  const autoSendTime = info.autoSendCheckinTime || '14:00'; // default 2pm
+  if (!autoSendTime) return;
+
+  const now = new Date();
+  const [h, m] = autoSendTime.split(':').map(Number);
+  const nowMins = now.getHours()*60 + now.getMinutes();
+  const targetMins = h*60 + m;
+
+  // Only run in a 5-minute window after the configured time
+  if (nowMins < targetMins || nowMins > targetMins + 5) return;
+
+  // Find all confirmed bookings arriving today that haven't had the link sent
+  const arrivingToday = bookings.filter(b =>
+    b.checkIn === TODAY &&
+    b.status === 'confirmed' &&
+    !b.checkinLinkSent &&
+    b.phone
+  );
+
+  if (!arrivingToday.length) return;
+
+  // Generate tokens and mark as sent
+  let sent = 0;
+  arrivingToday.forEach(b => {
+    const url = getCheckinUrl(b.id);
+    const idx = bookings.findIndex(x => x.id === b.id);
+    if (idx !== -1) {
+      bookings[idx].checkinLinkSent = true;
+      bookings[idx].checkinLinkSentAt = new Date().toISOString();
+      sent++;
+    }
+    // Log the auto-send
+    logActivity('checkin_link_sent', { guest: b.guest, siteId: b.siteId, phone: b.phone });
+  });
+
+  if (sent > 0) {
+    localStorage.setItem('bookings_cache', JSON.stringify(bookings));
+    // Show ARIA alert so staff know links were sent
+    addARIAAutoSendAlert(arrivingToday);
+  }
+}
+
+function addARIAAutoSendAlert(guests) {
+  const names = guests.map(b => b.guest.split(' ')[0]).join(', ');
+  notify(`📱 Check-in links auto-sent to ${guests.length} arriving guest${guests.length!==1?'s':''}: ${names}`, '#52B788');
+  // Also flag in ARIA proactive alerts
+  const badge = document.getElementById('ai-alert-badge');
+  if (badge) {
+    badge.style.display = 'flex';
+    const current = parseInt(badge.textContent) || 0;
+    badge.textContent = current + 1;
+  }
+}
+
+// Check every 5 minutes
+setInterval(checkAutoSendCheckinLinks, 5 * 60 * 1000);
+// Also check on load
+setTimeout(checkAutoSendCheckinLinks, 10000);
+
+// ── Add auto-send time to park settings ──────────────────────
+// Wire into saveParkInfo / loadParkInfo — add field to Settings UI
+
+// ── Show link-sent badge on booking detail ───────────────────
+function getCheckinLinkStatus(b) {
+  if (b.status === 'checked-in' && b.selfCheckedIn) return { badge:'✅ Self Checked In', color:'#52B788' };
+  if (b.status === 'checked-in') return null;
+  if (b.checkinLinkSent) {
+    const sentAt = b.checkinLinkSentAt ? new Date(b.checkinLinkSentAt).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit'}) : '';
+    return { badge:`📱 Check-in Link Sent${sentAt?' at '+sentAt:''}`, color:'#2196F3' };
+  }
+  return null;
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// GATE NOTICEBOARD — Print QR for arrive.html
+// ══════════════════════════════════════════════════════════════
+
+function openGateNoticeboardPrint() {
+  const base = window.location.href.replace(/[^/]*$/, '');
+  const url  = base + 'arrive.html';
+  const park = getActivePark();
+  const info = getParkInfo();
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(url)}&color=1B4332&bgcolor=ffffff&qzone=2`;
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>Gate Noticeboard — ${park.name}</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:#fff; display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+  .sign { width:340px; border:3px solid #1B4332; border-radius:20px; overflow:hidden; text-align:center; }
+  .sign-header { background:#1B4332; padding:20px; }
+  .sign-header h1 { font-size:22px; font-weight:900; color:#fff; margin-bottom:4px; }
+  .sign-header p { font-size:13px; color:#74c69d; }
+  .sign-body { padding:20px; }
+  .step { display:flex; align-items:flex-start; gap:12px; text-align:left; margin-bottom:14px; }
+  .step-num { background:#1B4332; color:#fff; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; flex-shrink:0; margin-top:1px; }
+  .step-text { font-size:13px; color:#1a2e24; line-height:1.4; }
+  .qr-wrap { margin:16px 0; }
+  .qr-wrap img { border-radius:10px; border:2px solid #e8efe8; }
+  .url { font-size:10px; color:#74c69d; word-break:break-all; margin-top:8px; font-family:monospace; }
+  .divider { border:none; border-top:1px solid #e8efe8; margin:16px 0; }
+  ${info.phone ? `.phone { background:#f8fdf9; border:1px solid #d4eddf; border-radius:10px; padding:12px; }
+  .phone p { font-size:12px; color:#4b5563; }
+  .phone strong { font-size:18px; color:#1B4332; display:block; margin-top:4px; }` : ''}
+  .footer { background:#f4f7f5; padding:12px; font-size:11px; color:#74c69d; }
+  @media print { body { padding:0; } }
+</style>
+</head>
+<body>
+  <div class="sign">
+    <div class="sign-header">
+      <h1>🌿 ${park.name}</h1>
+      <p>After Hours Guest Check-In</p>
+    </div>
+    <div class="sign-body">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">Check your phone for your <strong>check-in SMS link</strong> — tap it to check in instantly</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">Or <strong>scan the QR code below</strong> to find your booking yourself</div>
+      </div>
+      <div class="qr-wrap">
+        <img src="${qrSrc}" width="220" height="220" alt="Check-in QR">
+        <div class="url">${url}</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">Enter your <strong>surname</strong> and <strong>arrival date</strong> to find your booking and check yourself in</div>
+      </div>
+      ${info.gateCode ? `<hr class="divider">
+      <div style="background:#fff8e1;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px">🚪 Gate Entry Code</div>
+        <div style="font-size:32px;font-weight:900;color:#1B4332;letter-spacing:6px">${info.gateCode}</div>
+      </div>` : ''}
+      ${info.phone ? `<hr class="divider">
+      <div class="phone">
+        <p>Need help? Call reception:</p>
+        <strong>${info.phone}</strong>
+      </div>` : ''}
+    </div>
+    <div class="footer">Powered by SiteHelm · sitehelm.com.au</div>
+  </div>
+  <script>window.onload=()=>window.print()<\/script>
+</body></html>`);
+  win.document.close();
+}
 
 </script>
 </body>
