@@ -667,6 +667,17 @@
   .rate-day.today-rate { outline:2px solid var(--accent); outline-offset:-2px; }
   .rate-day-num { font-weight:700; color:var(--text-primary); font-size:11px; }
   .rate-day-price { font-size:9px; color:var(--accent); font-weight:600; margin-top:1px; }
+  #events-panel { display:none; flex-direction:column; overflow-y:auto; }
+  #events-panel.show { display:flex; }
+  .event-day { border-radius:5px; padding:4px 2px; text-align:left; font-size:10px; cursor:pointer; border:1px solid var(--border-light); position:relative; transition:all 0.1s; min-height:52px; }
+  .event-day:hover { border-color:var(--accent); z-index:1; }
+  .event-day.other-month { opacity:0.35; }
+  .event-day.today-event { outline:2px solid var(--accent); outline-offset:-2px; }
+  .event-day-num { font-weight:700; color:var(--text-primary); font-size:11px; padding-left:2px; }
+  .event-pill { display:block; font-size:8.5px; font-weight:700; border-radius:3px; padding:1px 3px; margin:2px 2px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .event-cat-badge { display:inline-flex; align-items:center; gap:4px; border-radius:20px; padding:4px 10px; font-size:11px; font-weight:700; margin-right:6px; margin-bottom:4px; }
+  .event-card { background:var(--bg-card);border:1px solid var(--border-light);border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color 0.15s; display:flex; gap:12px; align-items:flex-start; }
+  .event-card:hover { border-color:var(--accent); }
   .rate-type-btn { padding:6px 14px; border-radius:6px; border:2px solid transparent; cursor:pointer; font-size:12px; font-weight:700; transition:all 0.15s; }
   .rate-type-btn.active { border-color:currentColor; }
 
@@ -844,6 +855,7 @@
   <div class="tab" onclick="switchTab('staff')">👥 Staff</div>
   <div class="tab" onclick="switchTab('housekeeping')">🧹 Housekeeping</div>
   <div class="tab" onclick="switchTab('rates')">💰 Rates</div>
+  <div class="tab" onclick="switchTab('events')" id="events-tab">📆 Events</div>
   <div class="tab" onclick="switchTab('maintenance')" id="maintenance-tab">🔧 Maintenance</div>
   <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
   <div class="tab" onclick="switchTab('backup')">💾 Backup</div>
@@ -1151,6 +1163,15 @@
             <div id="dash-today-departures" style="max-height:200px;overflow-y:auto"></div>
             <span onclick="switchTab('movements')" style="font-size:12px;color:#1B4332;font-weight:600;cursor:pointer;display:block;margin-top:8px">View all departures →</span>
           </div>
+        </div>
+
+        <!-- Upcoming Events Widget -->
+        <div style="background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);overflow:hidden">
+          <div style="padding:14px 18px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:12px;font-weight:700;color:#1B4332">📆 Upcoming Events</div>
+            <span onclick="switchTab('events')" style="font-size:11px;color:#1B4332;font-weight:600;cursor:pointer">View all →</span>
+          </div>
+          <div id="dash-events-widget" style="padding:12px 18px"></div>
         </div>
       </div>
 
@@ -2379,6 +2400,52 @@ app.post('/refund', async (req, res) => {
       </div>
     </div>
 
+
+  </div>
+
+  <!-- EVENTS PANEL -->
+  <div id="events-panel">
+
+    <div class="settings-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+        <div>
+          <h3 style="margin-bottom:2px">📆 Park Event Calendar</h3>
+          <p style="font-size:12px;color:var(--text-dim)">Plan activities, facility closures and community events. Flag events to show on the gate noticeboard and guest self check-in page.</p>
+        </div>
+        <button class="btn btn-green" style="padding:9px 18px;font-size:13px" onclick="openAddEventModal()">+ Add Event</button>
+      </div>
+    </div>
+
+    <div class="settings-card" style="padding:14px 20px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-right:4px">Categories:</div>
+        <div id="event-legend"></div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <button onclick="eventCalPrev()" style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;color:var(--text-primary);font-weight:700">◀</button>
+          <span id="event-cal-month" style="font-size:13px;font-weight:700;color:var(--text-primary);min-width:130px;text-align:center"></span>
+          <button onclick="eventCalNext()" style="background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;color:var(--text-primary);font-weight:700">▶</button>
+          <button onclick="eventCalToday()" style="background:#1B4332;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:700">Today</button>
+        </div>
+      </div>
+      <div class="rate-calendar" style="margin-bottom:4px">
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:2px">Sun</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:2px">Mon</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:2px">Tue</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:2px">Wed</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:2px">Thu</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:2px">Fri</div>
+        <div style="text-align:center;font-size:10px;font-weight:700;color:var(--text-dim);padding:2px">Sat</div>
+      </div>
+      <div class="rate-calendar" id="event-calendar-grid"></div>
+    </div>
+
+    <div class="settings-card">
+      <h3 style="margin-bottom:14px">📋 Upcoming Events</h3>
+      <div id="event-list"></div>
+      <div id="event-list-empty" style="text-align:center;padding:24px;color:var(--text-dim);font-size:13px">
+        No events scheduled yet — click + Add Event to plan your first activity, closure or community event.
+      </div>
+    </div>
 
   </div>
 
@@ -4528,6 +4595,7 @@ function renderDashboard() {
 
   // Render mini chart
   renderDashMiniChart();
+  if (typeof renderDashEventsWidget === 'function') renderDashEventsWidget();
 }
 
 function renderDashMiniChart() {
@@ -4599,7 +4667,7 @@ function renderDashMiniChart() {
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i)=>{ t.classList.toggle('active', ['map','dashboard','bookings','grid','movements','sms','staff','housekeeping','rates','maintenance','settings','backup','anpr'][i]===tab); });
+  document.querySelectorAll('.tab').forEach((t,i)=>{ t.classList.toggle('active', ['map','dashboard','bookings','grid','movements','sms','staff','housekeeping','rates','events','maintenance','settings','backup','anpr'][i]===tab); });
   document.getElementById('map-panel').classList.toggle('hide', tab!=='map');
   document.getElementById('dashboard-panel').classList.toggle('show', tab==='dashboard');
   document.getElementById('bookings-panel').classList.toggle('show', tab==='bookings');
@@ -4611,6 +4679,7 @@ function switchTab(tab) {
   const spEl = document.getElementById('settings-panel'); if(spEl) spEl.classList.toggle('show', tab==='settings');
   const hkEl = document.getElementById('housekeeping-panel'); if(hkEl) hkEl.classList.toggle('show', tab==='housekeeping');
   const rtEl = document.getElementById('rates-panel'); if(rtEl) rtEl.classList.toggle('show', tab==='rates');
+  const evEl = document.getElementById('events-panel'); if(evEl) evEl.classList.toggle('show', tab==='events');
   const mnEl = document.getElementById('maintenance-panel'); if(mnEl) mnEl.classList.toggle('show', tab==='maintenance');
   if (tab==='maintenance') renderMaintenanceBoard();
   const anprEl = document.getElementById('anpr-panel'); if(anprEl) anprEl.classList.toggle('show', tab==='anpr');
@@ -4633,6 +4702,7 @@ function switchTab(tab) {
   if (tab==='settings') { renderSiteManager(); renderPricingDefaults(); initEmbedCode(); loadGhlSettings(); renderActiveBlocks(); initLoyaltySettings(); loadParkInfo(); const sp=document.getElementById('settings-panel'); if(sp) sp.scrollTop=0; }
   if (tab==='housekeeping') { renderHousekeeping(); }
   if (tab==='rates') { renderRates(); }
+  if (tab==='events') { renderEvents(); }
   if (tab==='anpr') { renderAnprPlaceholder(); }
 }
 
@@ -9672,6 +9742,20 @@ function clearGhlLog() {
 
 const WHATS_NEW = [
   {
+    version: '2.3',
+    date: '2026-09-11',
+    tag: '📆 New Feature',
+    tagColor: '#1B4332',
+    title: 'Park Event Calendar',
+    items: [
+      'New Events tab — plan activities, facility closures, kids club sessions, markets and community events',
+      'Month calendar view with colour-coded categories, plus a scrolling upcoming events list',
+      'Single or multi-day events, all-day or timed, with location and description fields',
+      'Flag any event to show on the gate noticeboard and the guest self check-in page so arriving guests see what\'s on',
+      '"Upcoming Events" widget added to the Dashboard for an at-a-glance view',
+    ]
+  },
+  {
     version: '2.2',
     date: '2026-09-11',
     tag: '🌙 New Feature',
@@ -10281,6 +10365,287 @@ function deleteRate(id) {
   saveRates(updated);
   renderRates();
   notify('Rate period deleted');
+}
+
+// ══════════════════════════════════════════════════════════════
+// PARK EVENT CALENDAR
+// ══════════════════════════════════════════════════════════════
+
+const EVENT_KEY = 'sitehelm_events';
+let eventCalViewYear  = new Date().getFullYear();
+let eventCalViewMonth = new Date().getMonth();
+
+const EVENT_CATS = {
+  activity:  { icon:'🎉', label:'Activity',         bg:'#e8f4ff', border:'#90caf9', color:'#1565c0' },
+  community: { icon:'🍖', label:'Community',        bg:'#fff3cd', border:'#ffc107', color:'#856404' },
+  kids:      { icon:'🧒', label:'Kids Club',        bg:'#f3e5f5', border:'#ce93d8', color:'#6a1b9a' },
+  closure:   { icon:'🚧', label:'Facility Closure',  bg:'#ffe5e0', border:'#ef9a9a', color:'#b71c1c' },
+  market:    { icon:'🛍️', label:'Market/Stall',      bg:'#d4eddf', border:'#52B788', color:'#1B4332' },
+  other:     { icon:'📌', label:'Other',             bg:'',        border:'',        color:'' },
+};
+
+function genEventId() { return 'EV' + String(Math.floor(Math.random()*90000)+10000); }
+
+function loadEvents() {
+  try { return JSON.parse(localStorage.getItem(EVENT_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+
+function saveEvents(events) {
+  events.sort((a,b)=> a.date===b.date ? (a.startTime||'').localeCompare(b.startTime||'') : a.date.localeCompare(b.date));
+  localStorage.setItem(EVENT_KEY, JSON.stringify(events));
+}
+
+function eventsOnDate(dateStr) {
+  return loadEvents().filter(e => dateStr >= e.date && dateStr <= (e.endDate || e.date));
+}
+
+function renderEvents() {
+  renderEventLegend();
+  renderEventCalendar();
+  renderEventList();
+}
+
+function renderEventLegend() {
+  const el = document.getElementById('event-legend');
+  if (!el) return;
+  el.innerHTML = Object.entries(EVENT_CATS).map(([key, c]) =>
+    `<span class="event-cat-badge" style="background:${c.bg||'var(--bg-hover)'};border:2px solid ${c.border||'var(--border)'};color:${c.color||'var(--text-muted)'}">${c.icon} ${c.label}</span>`
+  ).join('');
+}
+
+function eventCalPrev() { eventCalViewMonth--; if(eventCalViewMonth<0){eventCalViewMonth=11;eventCalViewYear--;} renderEventCalendar(); }
+function eventCalNext() { eventCalViewMonth++; if(eventCalViewMonth>11){eventCalViewMonth=0;eventCalViewYear++;} renderEventCalendar(); }
+function eventCalToday() { const d=new Date(); eventCalViewYear=d.getFullYear(); eventCalViewMonth=d.getMonth(); renderEventCalendar(); }
+
+function renderEventCalendar() {
+  const monthEl = document.getElementById('event-cal-month');
+  const grid    = document.getElementById('event-calendar-grid');
+  if (!monthEl || !grid) return;
+
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  monthEl.textContent = `${MONTHS[eventCalViewMonth]} ${eventCalViewYear}`;
+
+  const today  = new Date().toISOString().split('T')[0];
+  const first  = new Date(eventCalViewYear, eventCalViewMonth, 1);
+  const last   = new Date(eventCalViewYear, eventCalViewMonth+1, 0);
+  const startDow = first.getDay();
+
+  let html = '';
+  for (let i = 0; i < startDow; i++) html += '<div class="event-day other-month"></div>';
+
+  for (let d = 1; d <= last.getDate(); d++) {
+    const dateStr = `${eventCalViewYear}-${String(eventCalViewMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayEvents = eventsOnDate(dateStr);
+    const isToday = dateStr === today;
+    let cls = 'event-day' + (isToday ? ' today-event' : '');
+
+    const pills = dayEvents.slice(0,3).map(e => {
+      const c = EVENT_CATS[e.category] || EVENT_CATS.other;
+      return `<span class="event-pill" style="background:${c.bg||'var(--bg-hover)'};color:${c.color||'var(--text-muted)'}">${c.icon} ${e.title}</span>`;
+    }).join('');
+    const more = dayEvents.length > 3 ? `<span class="event-pill" style="color:var(--text-dim)">+${dayEvents.length-3} more</span>` : '';
+
+    html += `<div class="${cls}" onclick="openAddEventModal('${dateStr}')" title="${dayEvents.length ? dayEvents.map(e=>e.title).join(', ') : 'Click to add an event'}">
+      <div class="event-day-num">${d}</div>
+      ${pills}${more}
+    </div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function renderEventList() {
+  const events  = loadEvents();
+  const listEl  = document.getElementById('event-list');
+  const emptyEl = document.getElementById('event-list-empty');
+  if (!listEl || !emptyEl) return;
+
+  const today = new Date().toISOString().split('T')[0];
+  const upcoming = events.filter(e => (e.endDate || e.date) >= today);
+
+  if (!upcoming.length) {
+    listEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  listEl.innerHTML = upcoming.map(e => {
+    const c = EVENT_CATS[e.category] || EVENT_CATS.other;
+    const dateRange = e.endDate && e.endDate !== e.date ? `${fmtDate(e.date)} → ${fmtDate(e.endDate)}` : fmtDate(e.date);
+    const timeStr = e.allDay ? 'All day' : [e.startTime, e.endTime].filter(Boolean).join(' – ') || '';
+    return `<div class="event-card" onclick="editEvent('${e.id}')">
+      <div style="font-size:22px;flex-shrink:0">${c.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+          <span style="font-size:14px;font-weight:800;color:var(--text-primary)">${e.title}</span>
+          <span style="font-size:10px;font-weight:700;color:${c.color||'var(--text-muted)'};background:${c.bg||'var(--bg-hover)'};border-radius:20px;padding:2px 8px">${c.label}</span>
+          ${e.showOnNoticeboard ? '<span style="font-size:10px;font-weight:700;color:#1B4332;background:rgba(82,183,136,0.15);border-radius:20px;padding:2px 8px">📋 On gate noticeboard</span>' : ''}
+        </div>
+        <div style="font-size:12px;color:var(--text-muted)">${dateRange}${timeStr ? ` &nbsp;·&nbsp; ${timeStr}` : ''}${e.location ? ` &nbsp;·&nbsp; 📍 ${e.location}` : ''}</div>
+        ${e.description ? `<div style="font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.4">${e.description}</div>` : ''}
+      </div>
+      <button class="site-del-btn" onclick="event.stopPropagation();deleteEvent('${e.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function openAddEventModal(prefillDate='') {
+  openModal('📆 Add Park Event', `
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="form-field">
+        <label>Event Title</label>
+        <input type="text" id="event-modal-title" placeholder="e.g. Friday Night Trivia, Pool Closed for Cleaning"
+          style="width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-field">
+          <label>Start date</label>
+          <input type="date" id="event-modal-date" value="${prefillDate}"
+            style="width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+        </div>
+        <div class="form-field">
+          <label>End date <span style="color:var(--text-dim);font-weight:400">(optional)</span></label>
+          <input type="date" id="event-modal-enddate" value="${prefillDate}"
+            style="width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+        </div>
+      </div>
+      <div class="form-field" style="display:flex;align-items:center;gap:8px;flex-direction:row">
+        <input type="checkbox" id="event-modal-allday" checked onchange="document.getElementById('event-time-row').style.display=this.checked?'none':'flex'" style="width:16px;height:16px">
+        <label style="margin:0">All day</label>
+      </div>
+      <div id="event-time-row" style="display:none;gap:12px">
+        <div class="form-field" style="flex:1">
+          <label>Start time</label>
+          <input type="time" id="event-modal-starttime"
+            style="width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+        </div>
+        <div class="form-field" style="flex:1">
+          <label>End time</label>
+          <input type="time" id="event-modal-endtime"
+            style="width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+        </div>
+      </div>
+      <div class="form-field">
+        <label>Category</label>
+        <select id="event-modal-category"
+          style="width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+          ${Object.entries(EVENT_CATS).map(([key,c])=>`<option value="${key}">${c.icon} ${c.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-field">
+        <label>Location <span style="color:var(--text-dim);font-weight:400">(optional)</span></label>
+        <input type="text" id="event-modal-location" placeholder="e.g. Camp Kitchen, Pool Area, Whole Park"
+          style="width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+      </div>
+      <div class="form-field">
+        <label>Description <span style="color:var(--text-dim);font-weight:400">(optional)</span></label>
+        <textarea id="event-modal-desc" rows="2" placeholder="Details guests or staff should know"
+          style="width:100%;padding:9px 11px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none;resize:vertical"></textarea>
+      </div>
+      <div class="form-field" style="display:flex;align-items:center;gap:8px;flex-direction:row">
+        <input type="checkbox" id="event-modal-noticeboard" style="width:16px;height:16px">
+        <label style="margin:0">Show on gate noticeboard &amp; guest self check-in page</label>
+      </div>
+      <div id="event-modal-err" style="color:#ef9a9a;font-size:12px;min-height:16px"></div>
+      <div class="form-actions">
+        <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-green" onclick="saveEvent()">Save Event</button>
+      </div>
+    </div>
+  `);
+}
+
+function saveEvent(editId=null) {
+  const title      = document.getElementById('event-modal-title')?.value.trim();
+  const date       = document.getElementById('event-modal-date')?.value;
+  let   endDate    = document.getElementById('event-modal-enddate')?.value;
+  const allDay     = document.getElementById('event-modal-allday')?.checked;
+  const startTime  = allDay ? '' : document.getElementById('event-modal-starttime')?.value;
+  const endTime    = allDay ? '' : document.getElementById('event-modal-endtime')?.value;
+  const category   = document.getElementById('event-modal-category')?.value;
+  const location   = document.getElementById('event-modal-location')?.value.trim();
+  const description= document.getElementById('event-modal-desc')?.value.trim();
+  const showOnNoticeboard = !!document.getElementById('event-modal-noticeboard')?.checked;
+  const errEl = document.getElementById('event-modal-err');
+
+  if (!title)      { errEl.textContent = 'Enter an event title'; return; }
+  if (!date)        { errEl.textContent = 'Select a start date'; return; }
+  if (!endDate || endDate < date) endDate = date;
+
+  const events = loadEvents();
+  const entry = { id: editId || genEventId(), title, date, endDate, allDay, startTime, endTime, category, location, description, showOnNoticeboard };
+
+  if (editId) {
+    const idx = events.findIndex(e=>e.id===editId);
+    if (idx>=0) events[idx] = entry;
+  } else {
+    events.push(entry);
+  }
+
+  saveEvents(events);
+  closeModal();
+  renderEvents();
+  if (typeof renderDashEventsWidget === 'function') renderDashEventsWidget();
+  notify(`✅ Event saved — ${title} on ${fmtDate(date)}`);
+}
+
+function editEvent(id) {
+  const events = loadEvents();
+  const e = events.find(x=>x.id===id);
+  if (!e) return;
+  openAddEventModal(e.date);
+  setTimeout(() => {
+    document.getElementById('event-modal-title').value    = e.title;
+    document.getElementById('event-modal-date').value     = e.date;
+    document.getElementById('event-modal-enddate').value  = e.endDate || e.date;
+    document.getElementById('event-modal-allday').checked = e.allDay !== false;
+    document.getElementById('event-time-row').style.display = e.allDay === false ? 'flex' : 'none';
+    if (e.startTime) document.getElementById('event-modal-starttime').value = e.startTime;
+    if (e.endTime)   document.getElementById('event-modal-endtime').value   = e.endTime;
+    document.getElementById('event-modal-category').value = e.category || 'other';
+    document.getElementById('event-modal-location').value = e.location || '';
+    document.getElementById('event-modal-desc').value     = e.description || '';
+    document.getElementById('event-modal-noticeboard').checked = !!e.showOnNoticeboard;
+    const btns = document.querySelectorAll('#modal .btn-green');
+    btns.forEach(b => { b.textContent = 'Update Event'; b.onclick = ()=>saveEvent(id); });
+  }, 80);
+}
+
+function deleteEvent(id) {
+  const events = loadEvents();
+  const e = events.find(x=>x.id===id);
+  if (!confirm(`Delete event "${e?.title}"? This cannot be undone.`)) return;
+  const updated = events.filter(x=>x.id!==id);
+  saveEvents(updated);
+  renderEvents();
+  if (typeof renderDashEventsWidget === 'function') renderDashEventsWidget();
+  notify('Event deleted');
+}
+
+function renderDashEventsWidget() {
+  const el = document.getElementById('dash-events-widget');
+  if (!el) return;
+  const today = new Date().toISOString().split('T')[0];
+  const upcoming = loadEvents().filter(e => (e.endDate || e.date) >= today).slice(0, 4);
+
+  if (!upcoming.length) {
+    el.innerHTML = `<div style="text-align:center;padding:10px;color:#999;font-size:12px">No upcoming events — <span onclick="switchTab('events')" style="color:#1B4332;font-weight:700;cursor:pointer">plan one →</span></div>`;
+    return;
+  }
+
+  el.innerHTML = upcoming.map(e => {
+    const c = EVENT_CATS[e.category] || EVENT_CATS.other;
+    const timeStr = e.allDay ? 'All day' : (e.startTime || '');
+    return `<div onclick="switchTab('events')" style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;cursor:pointer;border-bottom:1px solid #f5f5f5">
+      <div style="font-size:16px;flex-shrink:0">${c.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.title}</div>
+        <div style="font-size:11px;color:#888">${fmtDate(e.date)}${timeStr?` · ${timeStr}`:''}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ══════════════════════════════════════════════════════════════

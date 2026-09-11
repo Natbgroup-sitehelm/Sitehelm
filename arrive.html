@@ -119,6 +119,12 @@
     <span style="font-size:12px;opacity:0.8">Or check your email for your booking confirmation.</span></p>
   </div>
 
+  <!-- What's On -->
+  <div class="card" id="whats-on-card" style="display:none">
+    <div style="font-size:11px;font-weight:700;color:#52B788;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px">📆 What's On</div>
+    <div id="whats-on-list"></div>
+  </div>
+
 </div>
 
 <div class="footer">Powered by SiteHelm · sitehelm.com.au</div>
@@ -180,6 +186,38 @@ if (phone) {
 // Set today as default date
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('search-date').value = today;
+
+// ── What's On (gate-noticeboard events) ─────────────────────────
+function renderWhatsOn() {
+  const EVENT_CAT_ICONS = { activity:'🎉', community:'🍖', kids:'🧒', closure:'🚧', market:'🛍️', other:'📌' };
+  let events = [];
+  try { events = JSON.parse(localStorage.getItem('sitehelm_events') || '[]'); } catch(e) { events = []; }
+
+  const upcoming = events
+    .filter(e => e.showOnNoticeboard && (e.endDate || e.date) >= today)
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .slice(0, 5);
+
+  const card = document.getElementById('whats-on-card');
+  const list = document.getElementById('whats-on-list');
+  if (!upcoming.length) { card.style.display = 'none'; return; }
+
+  card.style.display = 'block';
+  list.innerHTML = upcoming.map((e, i) => {
+    const icon = EVENT_CAT_ICONS[e.category] || '📌';
+    const dateRange = e.endDate && e.endDate !== e.date ? `${fmtDate(e.date)} → ${fmtDate(e.endDate)}` : fmtDate(e.date);
+    const timeStr = e.allDay ? '' : [e.startTime, e.endTime].filter(Boolean).join(' – ');
+    const borderStyle = i === upcoming.length - 1 ? '' : 'border-bottom:1px solid #f4f7f5;';
+    return `<div style="display:flex;gap:10px;padding:8px 0;${borderStyle}">
+      <div style="font-size:20px;flex-shrink:0">${icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:800;color:#1a2e24">${e.title}</div>
+        <div style="font-size:12px;color:#74c69d;margin-top:1px">${dateRange}${timeStr?` · ${timeStr}`:''}${e.location?` · 📍 ${e.location}`:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+renderWhatsOn();
 
 // ── Search ────────────────────────────────────────────────────
 function clearResults() {
