@@ -1148,6 +1148,10 @@
 
       <!-- Right: Today panel -->
       <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;gap:12px">
+        <!-- Weather Widget -->
+        <div style="background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);overflow:hidden;padding:14px 18px">
+          <div id="dash-weather-widget"></div>
+        </div>
         <div style="background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,0.07);overflow:hidden">
           <div style="padding:14px 18px;border-bottom:1px solid #f0f0f0">
             <div style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:0.5px">Today</div>
@@ -1799,6 +1803,19 @@ app.post('/refund', async (req, res) => {
       <div class="form-field">
         <label>Direct Booking Link (for nurture emails)</label>
         <input type="text" id="park-booking-url" placeholder="https://yourpark.com.au/book" oninput="saveParkInfo()">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-field">
+          <label>🌤️ Weather Latitude</label>
+          <input type="text" id="park-weather-lat" placeholder="-31.8917" oninput="saveParkInfo();renderWeatherWidget()"
+            style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+        </div>
+        <div class="form-field">
+          <label>🌤️ Weather Longitude</label>
+          <input type="text" id="park-weather-lon" placeholder="116.1667" oninput="saveParkInfo();renderWeatherWidget()"
+            style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none">
+          <p style="font-size:10px;color:var(--text-dim);margin-top:3px">Used for the weather widget on the Dashboard and gate noticeboard. Defaults to Mundaring, WA — look up your park's coordinates on Google Maps (right-click → what's here) if you're elsewhere.</p>
+        </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="form-field">
@@ -4449,7 +4466,7 @@ function renderDashboard() {
   const stats = [
     { icon:'🚐', iconBg:'#E8F5E9', val:arrivals.length,  lbl:'Arrivals Today',    sub:'guests checking in',   link:'View arrivals →',    tab:'movements', filter:'arriving' },
     { icon:'👋', iconBg:'#FFF3E0', val:departures.length, lbl:'Departures Today',  sub:'guests checking out',  link:'View departures →',  tab:'movements', filter:'departing' },
-    { icon:'🏕️', iconBg:'#E3F2FD', val:inhouse.length,   lbl:'In Park',           sub:headcountSub || 'no guests checked in', link:'View guests →',  tab:'movements', filter:'inhouse' },
+    { icon:'🏕️', iconBg:'#E3F2FD', val:inhouse.length,   lbl:'Sites Occupied',    sub:headcountSub || 'no guests checked in', link:'View guests →',  tab:'movements', filter:'inhouse' },
     { icon:'📊', iconBg:'#F3E5F5', val:`${occPct}%`,     lbl:'Occupancy',         sub:`${inhouse.length} / ${SITES.length} sites occupied`, link:'View availability →', tab:'grid', filter:'' },
     { icon:'⛺', iconBg:'#E8F5E9', val:availSites,        lbl:'Available Sites',   sub:'sites open to book',   link:'View availability →', tab:'grid', filter:'' },
     { icon:'💰', iconBg:'#FFF8E1', val:`A$${outstanding.toFixed(0)}`, lbl:'Outstanding Balance', sub:`A$${revenue.toFixed(0)} collected`, link:'View balances →', tab:'bookings', filter:'' },
@@ -4469,11 +4486,21 @@ function renderDashboard() {
         totalChildren > 0 ? `<span style="font-size:11px;background:#fff8e1;color:#b8860b;border-radius:10px;padding:2px 7px;font-weight:700;white-space:nowrap">👶 ${totalChildren}</span>` : '',
         totalPets > 0     ? `<span style="font-size:11px;background:#fce4ec;color:#c2185b;border-radius:10px;padding:2px 7px;font-weight:700;white-space:nowrap">🐾 ${totalPets}</span>` : '',
       ].filter(Boolean).join('');
+      const totalPeople = totalAdults + totalChildren;
       return `<div class="dash-stat-card">
         <div class="dash-stat-icon" style="background:${s.iconBg}">${s.icon}</div>
-        <div class="dash-stat-val">${s.val}</div>
-        <div class="dash-stat-lbl">${s.lbl}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${badges||'<span style="font-size:11px;color:#999">no guests</span>'}</div>
+        <div style="display:flex;align-items:flex-end;gap:10px;margin-top:2px">
+          <div>
+            <div class="dash-stat-val" style="font-size:22px">${s.val}</div>
+            <div class="dash-stat-lbl" style="margin-top:1px">Sites Occupied</div>
+          </div>
+          <div style="width:1px;align-self:stretch;background:#eee;margin-bottom:2px"></div>
+          <div>
+            <div class="dash-stat-val" style="font-size:22px;color:#2D6A4F">${totalPeople}</div>
+            <div class="dash-stat-lbl" style="margin-top:1px">Guests</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${badges||'<span style="font-size:11px;color:#999">no guests</span>'}</div>
         <span class="dash-stat-link" onclick="switchTab('${s.tab}')${s.filter?`;setMvFilter('${s.filter}')`:''}">${s.link}</span>
       </div>`;
     }
@@ -4596,6 +4623,7 @@ function renderDashboard() {
   // Render mini chart
   renderDashMiniChart();
   if (typeof renderDashEventsWidget === 'function') renderDashEventsWidget();
+  if (typeof renderWeatherWidget === 'function') renderWeatherWidget();
 }
 
 function renderDashMiniChart() {
@@ -7478,6 +7506,8 @@ function saveParkInfo() {
     collectPets:           document.getElementById('park-collect-pets')?.checked        || false,
     autoSendCheckinTime:   document.getElementById('park-auto-send-checkin')?.value     || '14:00',
     gateCode:              document.getElementById('park-gate-code')?.value.trim()      || '',
+    weatherLat:            document.getElementById('park-weather-lat')?.value.trim()    || '',
+    weatherLon:            document.getElementById('park-weather-lon')?.value.trim()    || '',
   };
   localStorage.setItem('park_info_'+getActivePark().id, JSON.stringify(info));
   const el = document.getElementById('park-info-status');
@@ -7499,6 +7529,8 @@ function loadParkInfo() {
   setChk('park-collect-pets',     info.collectPets);
   set('park-auto-send-checkin', info.autoSendCheckinTime || '14:00');
   set('park-gate-code',         info.gateCode || '');
+  set('park-weather-lat',       info.weatherLat || '');
+  set('park-weather-lon',       info.weatherLon || '');
   return info;
 }
 
@@ -10649,6 +10681,117 @@ function renderDashEventsWidget() {
 }
 
 // ══════════════════════════════════════════════════════════════
+// WEATHER WIDGET (Open-Meteo — no API key required)
+// ══════════════════════════════════════════════════════════════
+
+const WEATHER_CACHE_KEY = 'sitehelm_weather_cache';
+const WEATHER_CACHE_TTL_MS = 45 * 60 * 1000; // 45 minutes
+const WEATHER_DEFAULT_LAT = -31.8917; // Mundaring, WA fallback
+const WEATHER_DEFAULT_LON = 116.1667;
+
+// WMO weather interpretation codes → icon/label
+const WEATHER_CODES = {
+  0:  { icon:'☀️', label:'Clear sky' },
+  1:  { icon:'🌤️', label:'Mostly clear' },
+  2:  { icon:'⛅', label:'Partly cloudy' },
+  3:  { icon:'☁️', label:'Overcast' },
+  45: { icon:'🌫️', label:'Fog' },
+  48: { icon:'🌫️', label:'Fog' },
+  51: { icon:'🌦️', label:'Light drizzle' },
+  53: { icon:'🌦️', label:'Drizzle' },
+  55: { icon:'🌦️', label:'Heavy drizzle' },
+  56: { icon:'🌧️', label:'Freezing drizzle' },
+  57: { icon:'🌧️', label:'Freezing drizzle' },
+  61: { icon:'🌧️', label:'Light rain' },
+  63: { icon:'🌧️', label:'Rain' },
+  65: { icon:'🌧️', label:'Heavy rain' },
+  66: { icon:'🌧️', label:'Freezing rain' },
+  67: { icon:'🌧️', label:'Freezing rain' },
+  71: { icon:'🌨️', label:'Light snow' },
+  73: { icon:'🌨️', label:'Snow' },
+  75: { icon:'🌨️', label:'Heavy snow' },
+  77: { icon:'🌨️', label:'Snow grains' },
+  80: { icon:'🌦️', label:'Light showers' },
+  81: { icon:'🌧️', label:'Showers' },
+  82: { icon:'⛈️', label:'Violent showers' },
+  85: { icon:'🌨️', label:'Snow showers' },
+  86: { icon:'🌨️', label:'Snow showers' },
+  95: { icon:'⛈️', label:'Thunderstorm' },
+  96: { icon:'⛈️', label:'Thunderstorm, hail' },
+  99: { icon:'⛈️', label:'Thunderstorm, hail' },
+};
+function weatherCodeInfo(code) { return WEATHER_CODES[code] || { icon:'🌡️', label:'—' }; }
+
+function getWeatherLocation() {
+  const info = (typeof getParkInfo === 'function') ? getParkInfo() : {};
+  const lat = parseFloat(info.weatherLat);
+  const lon = parseFloat(info.weatherLon);
+  return {
+    lat: Number.isFinite(lat) ? lat : WEATHER_DEFAULT_LAT,
+    lon: Number.isFinite(lon) ? lon : WEATHER_DEFAULT_LON,
+  };
+}
+
+async function fetchWeather(force=false) {
+  const { lat, lon } = getWeatherLocation();
+  let cache = null;
+  try { cache = JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY) || 'null'); } catch(e) {}
+
+  const cacheMatches = cache && cache.lat===lat && cache.lon===lon;
+  if (!force && cacheMatches && (Date.now() - cache.fetchedAt) < WEATHER_CACHE_TTL_MS) {
+    return cache.data;
+  }
+
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=5`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Weather request failed');
+  const data = await res.json();
+  try { localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify({ lat, lon, fetchedAt: Date.now(), data })); } catch(e) {}
+  return data;
+}
+
+async function renderWeatherWidget() {
+  const el = document.getElementById('dash-weather-widget');
+  if (!el) return;
+  el.innerHTML = `<div style="text-align:center;padding:14px;color:#999;font-size:12px">Loading weather…</div>`;
+  try {
+    const data = await fetchWeather();
+    const cur  = data.current;
+    const daily = data.daily;
+    const curInfo = weatherCodeInfo(cur.weather_code);
+    const todayHigh = Math.round(daily.temperature_2m_max[0]);
+    const todayLow  = Math.round(daily.temperature_2m_min[0]);
+
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const strip = daily.time.slice(1,5).map((d,i) => {
+      const idx = i+1;
+      const info = weatherCodeInfo(daily.weather_code[idx]);
+      const dow = dayNames[new Date(d+'T00:00:00').getDay()];
+      return `<div style="flex:1;text-align:center">
+        <div style="font-size:10px;color:#999;font-weight:600">${dow}</div>
+        <div style="font-size:18px;margin:2px 0">${info.icon}</div>
+        <div style="font-size:11px;color:#555;font-weight:700">${Math.round(daily.temperature_2m_max[idx])}°</div>
+        <div style="font-size:10px;color:#aaa">${Math.round(daily.temperature_2m_min[idx])}°</div>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:36px">${curInfo.icon}</div>
+        <div style="flex:1">
+          <div style="font-size:22px;font-weight:900;color:#1a1a1a;line-height:1">${Math.round(cur.temperature_2m)}°C</div>
+          <div style="font-size:12px;color:#666">${curInfo.label} · H:${todayHigh}° L:${todayLow}°</div>
+          <div style="font-size:11px;color:#999;margin-top:1px">💨 ${Math.round(cur.wind_speed_10m)} km/h wind</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:2px;margin-top:10px;padding-top:10px;border-top:1px solid #f0f0f0">${strip}</div>
+    `;
+  } catch(err) {
+    el.innerHTML = `<div style="text-align:center;padding:10px;color:#999;font-size:12px">Weather unavailable right now</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
 // ANPR PLACEHOLDER
 // ══════════════════════════════════════════════════════════════
 
@@ -11604,9 +11747,6 @@ function renderRevenueWidget() {
 // DIGITAL ARRIVAL GUIDE
 // ══════════════════════════════════════════════════════════════
 
-function getParkInfo() {
-  try { return JSON.parse(localStorage.getItem('park_info') || '{}'); } catch(e) { return {}; }
-}
 function arrRow(label, val) {
   return '<div class="ir"><span class="il">' + label + '</span><span class="iv">' + val + '</span></div>';
 }
@@ -14020,6 +14160,12 @@ function buildParkContext() {
   const cancelled       = bookings.filter(b => b.status==='cancelled');
   const recentActivity  = (() => { try { return JSON.parse(localStorage.getItem('sitehelm_activity_log')||'[]').slice(0,10); } catch(e) { return []; } })();
 
+  // Headcount — adults / children / pets currently in the park
+  const totalAdults   = inHouse.reduce((s,b) => s + (b.guests||1), 0);
+  const totalChildren = inHouse.reduce((s,b) => s + (b.children||0), 0);
+  const totalPets     = inHouse.reduce((s,b) => s + (b.hasPet ? (b.petCount||1) : 0), 0);
+  const totalPeople   = totalAdults + totalChildren;
+
   // Housekeeping
   let hkSt = {};
   try { hkSt = JSON.parse(localStorage.getItem('hk_status')||'{}'); } catch(e) {}
@@ -14029,9 +14175,7 @@ function buildParkContext() {
   const clean    = SITES.filter(s => !hkSt[s.id] || hkSt[s.id]?.status==='clean');
 
   // Facilities
-  const facDirty = FACILITIES.filter(f => {
-    try { return JSON.parse(localStorage.getItem('hk_status')||'{}')[f.id]?.status==='dirty'; } catch(e) { return false; }
-  });
+  const facDirty = FACILITIES.filter(f => hkSt[f.id]?.status==='dirty');
 
   // Blocks
   const blocks   = loadSiteBlocks ? loadSiteBlocks() : [];
@@ -14039,33 +14183,91 @@ function buildParkContext() {
 
   // Rates
   const rates    = (() => { try { return JSON.parse(localStorage.getItem('sitehelm_rates')||'[]'); } catch(e) { return []; } })();
+  const activeRates = rates.filter(r => r.from <= today && r.to >= today);
 
   // Waitlist
   const waitlist = loadWaitlist ? loadWaitlist() : [];
 
-  // Activity log — rich recent history
-  const activity = [
-    { id:'AL001', type:'maintenance_reported', location:'P7', category:'plumbing', guest:'', siteId:'P7', timestamp: new Date(Date.now()-20*60000).toISOString() },
-    { id:'AL002', type:'hk_status_update', siteId:'P9', note:'Cleaning started', guest:'', timestamp: new Date(Date.now()-25*60000).toISOString() },
-    { id:'AL003', type:'booking_created', guest:'Young Couple', siteId:'G2', timestamp: new Date(Date.now()-45*60000).toISOString() },
-    { id:'AL004', type:'check_in', guest:'Chen & Lee', siteId:'G1', timestamp: new Date(Date.now()-60*60000).toISOString() },
-    { id:'AL005', type:'payment_taken', guest:'Thompson Family', siteId:'P1', timestamp: new Date(Date.now()-90*60000).toISOString() },
-    { id:'AL006', type:'check_in', guest:'Jake Morrison', siteId:'U6', timestamp: new Date(Date.now()-2*3600000).toISOString() },
-    { id:'AL007', type:'maintenance_reported', location:'C1', category:'appliance', guest:'', siteId:'C1', timestamp: new Date(Date.now()-5*3600000).toISOString() },
-    { id:'AL008', type:'booking_created', guest:'Lauren Mitchell', siteId:'P5', timestamp: new Date(Date.now()-6*3600000).toISOString() },
-    { id:'AL009', type:'check_out', guest:'Fletcher & Co', siteId:'C2', timestamp: new Date(Date.now()-7*3600000).toISOString() },
-    { id:'AL010', type:'payment_taken', guest:'Johnson & Partners', siteId:'C1', timestamp: new Date(Date.now()-8*3600000).toISOString() },
-    { id:'AL011', type:'booking_created', guest:'Baker School Group', siteId:'P3', timestamp: new Date(Date.now()-24*3600000).toISOString() },
-    { id:'AL012', type:'check_in', guest:'Brown Family', siteId:'P4', timestamp: new Date(Date.now()-25*3600000).toISOString() },
-    { id:'AL013', type:'hk_status_update', siteId:'U8', note:'Cleaning started', guest:'', timestamp: new Date(Date.now()-15*60000).toISOString() },
-    { id:'AL014', type:'late_checkout', guest:'Wilson Family', siteId:'P2', timestamp: new Date(Date.now()-3*3600000).toISOString() },
-    { id:'AL015', type:'booking_created', guest:'Green Family', siteId:'C1', timestamp: new Date(Date.now()-26*3600000).toISOString() },
-  ];
-  localStorage.setItem('sitehelm_activity_log', JSON.stringify(activity));
+  // Maintenance
+  const maintJobs   = (() => { try { return JSON.parse(localStorage.getItem('sitehelm_maintenance')||'[]'); } catch(e) { return []; } })();
+  const openJobs     = maintJobs.filter(j => j.status==='open' || j.status==='inprogress' || j.status==='parts');
+  const urgentJobs    = openJobs.filter(j => j.priority==='urgent' || j.priority==='high');
 
-  closeModal();
-  notify('🎉 Demo data loaded — 36 bookings, rich housekeeping, 7 maintenance jobs, 3 waitlist guests!', '#52B788');
-  switchTab('map');
+  // Staff — who's on duty right now
+  const clockLogNow = (() => { try { return JSON.parse(localStorage.getItem('clock_log')||'[]'); } catch(e) { return []; } })();
+  const onDuty = staffMembers.filter(s => {
+    const last = [...clockLogNow].reverse().find(l=>l.staffId===s.id);
+    return last?.type==='on';
+  });
+
+  // Upcoming park events (next 14 days)
+  const upcomingEvents = (() => {
+    try {
+      const evs = JSON.parse(localStorage.getItem('sitehelm_events')||'[]');
+      const next14 = addDays(today, 14);
+      return evs.filter(e => (e.endDate||e.date) >= today && e.date <= next14);
+    } catch(e) { return []; }
+  })();
+
+  const occPct = SITES.length ? Math.round(inHouse.length/SITES.length*100) : 0;
+  const outstandingTotal = unpaid.reduce((s,b)=>s+(b.total||0),0);
+
+  const fmtB = b => `${b.guest} (${b.siteId}, ${fmtDate(b.checkIn)} → ${fmtDate(b.checkOut)}${b.guests?`, ${b.guests} adult${b.guests!==1?'s':''}${b.children?` + ${b.children} child${b.children!==1?'ren':''}`:''}`:''}${b.paid?'':' — UNPAID'})`;
+
+  return `You are ARIA (Automated Resort Intelligence Assistant), the AI assistant built into SiteHelm for ${park?.name || 'this park'}${info.address?`, ${info.address}`:''}. You help the park manager and staff by answering questions about live bookings, guests, housekeeping, maintenance, staff and the park calendar. Be concise, friendly, and use the real data below — never invent guests, numbers or bookings that aren't listed here. If something isn't in this data, say so plainly rather than guessing.
+
+Today's date: ${fmtDate(today)} (${today})
+
+## Occupancy & headcount right now
+- ${inHouse.length} of ${SITES.length} sites occupied (${occPct}% occupancy)
+- ${totalPeople} guests currently in the park: ${totalAdults} adult${totalAdults!==1?'s':''}${totalChildren?` + ${totalChildren} child${totalChildren!==1?'ren':''}`:''}
+- ${totalPets} pet${totalPets!==1?'s':''} currently in the park
+- Checked-in guests: ${inHouse.length ? inHouse.map(fmtB).join('; ') : 'none'}
+
+## Today
+- Arriving today (${arriving.length}): ${arriving.length ? arriving.map(fmtB).join('; ') : 'none'}
+- Departing today (${departing.length}): ${departing.length ? departing.map(fmtB).join('; ') : 'none'}
+- Overdue (confirmed, check-in date already passed, not checked in) (${overdue.length}): ${overdue.length ? overdue.map(fmtB).join('; ') : 'none'}
+
+## Coming up
+- Arriving tomorrow (${arrivingTomorrow.length}): ${arrivingTomorrow.length ? arrivingTomorrow.map(fmtB).join('; ') : 'none'}
+- Arriving in the next 7 days (${next7Arrivals.length}): ${next7Arrivals.length ? next7Arrivals.slice(0,15).map(fmtB).join('; ') : 'none'}
+
+## Payments
+- Bookings with an outstanding balance (${unpaid.length}): total owing A$${outstandingTotal.toFixed(0)}${unpaid.length ? ' — ' + unpaid.slice(0,10).map(fmtB).join('; ') : ''}
+- Recently cancelled (${cancelled.length})
+
+## Housekeeping
+- Dirty sites (${dirty.length}): ${dirty.map(s=>s.label||s.id).join(', ')||'none'}
+- Cleaning in progress (${cleaning.length}): ${cleaning.map(s=>s.label||s.id).join(', ')||'none'}
+- Awaiting inspection (${inspected.length}): ${inspected.map(s=>s.label||s.id).join(', ')||'none'}
+- Clean/ready (${clean.length})
+- Dirty facilities (${facDirty.length}): ${facDirty.map(f=>f.name).join(', ')||'none'}
+
+## Maintenance
+- Open/in-progress jobs (${openJobs.length})${urgentJobs.length?`, ${urgentJobs.length} urgent/high priority`:''}: ${openJobs.length ? openJobs.slice(0,10).map(j=>`${j.location} — ${j.description} [${j.priority}, ${j.status}]`).join('; ') : 'none'}
+
+## Site blocks & rates
+- Sites currently blocked (${activeBlocks.length}): ${activeBlocks.map(b=>`${b.siteId} (${b.reason||'no reason given'}, until ${fmtDate(b.to)})`).join('; ')||'none'}
+- Active seasonal rate today: ${activeRates.length ? activeRates.map(r=>`${r.label||r.type} (${r.multiplier}× standard)`).join(', ') : 'standard pricing (no seasonal rate active today)'}
+
+## Waitlist
+- Guests waiting (${waitlist.length}): ${waitlist.length ? waitlist.map(w=>`${w.guest} (${w.prefType||'any type'}, ${fmtDate(w.checkIn)} → ${fmtDate(w.checkOut)})`).join('; ') : 'none'}
+
+## Staff
+- On duty now (${onDuty.length}): ${onDuty.map(s=>`${s.name} (${s.role})`).join(', ')||'no one currently clocked on'}
+- Active staff on the roster (${staffMembers.filter(s=>s.active).length}): ${staffMembers.filter(s=>s.active).map(s=>`${s.name} (${s.role})`).join(', ')||'none'}
+
+## Park calendar — upcoming events (next 14 days)
+${upcomingEvents.length ? upcomingEvents.map(e=>`- ${e.title} (${fmtDate(e.date)}${e.endDate&&e.endDate!==e.date?` → ${fmtDate(e.endDate)}`:''}${e.allDay?'':`, ${[e.startTime,e.endTime].filter(Boolean).join('–')}`}${e.location?`, ${e.location}`:''})`).join('\n') : 'No events scheduled in the next 14 days.'}
+
+## Park info
+- Gate code: ${info.gateCode || 'not set'}
+- Phone: ${info.phone || 'not set'}
+- Total sites: ${SITES.length}
+
+## Recent activity log (most recent first)
+${recentActivity.length ? recentActivity.map(a=>`- ${a.type}${a.guest?` — ${a.guest}`:''}${a.siteId?` (${a.siteId})`:''} at ${timeAgo(a.timestamp)}`).join('\n') : 'No recent activity recorded.'}`;
 }
 
 function openDemoModal() {

@@ -85,6 +85,7 @@
   <div class="hero-logo">🌿</div>
   <h1 id="park-title">Welcome!</h1>
   <div class="sub" id="park-sub">Find your booking to check in</div>
+  <div id="weather-chip" style="display:none;margin-top:10px;align-items:center;justify-content:center;gap:6px;font-size:13px;color:#c8e6d4"></div>
 </div>
 
 <div class="container">
@@ -176,6 +177,42 @@ document.getElementById('park-title').textContent = park.name || 'Welcome!';
 
 const phone = info.phone || '';
 const gateCode = info.gateCode || '';
+
+// ── Weather chip (Open-Meteo, no API key) ───────────────────────
+(async function loadWeatherChip() {
+  const WEATHER_CODES = {
+    0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',
+    51:'🌦️',53:'🌦️',55:'🌦️',56:'🌧️',57:'🌧️',
+    61:'🌧️',63:'🌧️',65:'🌧️',66:'🌧️',67:'🌧️',
+    71:'🌨️',73:'🌨️',75:'🌨️',77:'🌨️',
+    80:'🌦️',81:'🌧️',82:'⛈️',85:'🌨️',86:'🌨️',
+    95:'⛈️',96:'⛈️',99:'⛈️',
+  };
+  const lat = parseFloat(info.weatherLat), lon = parseFloat(info.weatherLon);
+  const useLat = Number.isFinite(lat) ? lat : -31.8917;
+  const useLon = Number.isFinite(lon) ? lon : 116.1667;
+
+  try {
+    let cache = null;
+    try { cache = JSON.parse(localStorage.getItem('sitehelm_weather_cache') || 'null'); } catch(e) {}
+    let data;
+    if (cache && cache.lat===useLat && cache.lon===useLon && (Date.now()-cache.fetchedAt) < 45*60*1000) {
+      data = cache.data;
+    } else {
+      const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${useLat}&longitude=${useLon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=1`);
+      if (!res.ok) return;
+      data = await res.json();
+      try { localStorage.setItem('sitehelm_weather_cache', JSON.stringify({ lat:useLat, lon:useLon, fetchedAt: Date.now(), data })); } catch(e) {}
+    }
+    const icon = WEATHER_CODES[data.current.weather_code] || '🌡️';
+    const temp = Math.round(data.current.temperature_2m);
+    const hi = Math.round(data.daily.temperature_2m_max[0]);
+    const lo = Math.round(data.daily.temperature_2m_min[0]);
+    const chip = document.getElementById('weather-chip');
+    chip.innerHTML = `<span style="font-size:18px">${icon}</span> ${temp}°C today &nbsp;·&nbsp; H:${hi}° L:${lo}°`;
+    chip.style.display = 'flex';
+  } catch(e) { /* weather is optional — fail silently */ }
+})();
 
 if (phone) {
   const helpBox = document.getElementById('help-box');
