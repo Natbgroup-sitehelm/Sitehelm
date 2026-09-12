@@ -262,6 +262,39 @@
   .price-summary { background: #0f1f15; border-radius: 8px; padding: 12px 14px; margin: 12px 0; font-size: 14px; color: #74c69d; }
   .price-summary strong { color: #52B788; font-size: 18px; }
   .form-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+  /* Onboarding Wizard */
+  #onboarding-overlay {
+    position: fixed; inset: 0; z-index: 9500; display: none;
+    align-items: center; justify-content: center; padding: 20px;
+    background: linear-gradient(150deg, #0d1f14 0%, #1B4332 60%, #2D6A4F 100%);
+  }
+  #onboarding-overlay.open { display: flex; }
+  #onboarding-card {
+    background: var(--modal-bg); border-radius: 18px; width: 100%; max-width: 560px;
+    max-height: 92vh; overflow-y: auto; box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    padding: 28px 30px 24px;
+  }
+  #onboarding-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; }
+  .ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-light); transition: background 0.2s; }
+  .ob-dot.active { background: #52B788; width: 22px; border-radius: 4px; }
+  .ob-dot.done { background: #2D6A4F; }
+  .ob-step-icon { font-size: 40px; text-align: center; margin-bottom: 8px; }
+  .ob-step-title { font-size: 20px; font-weight: 900; color: var(--text-primary); text-align: center; margin-bottom: 4px; }
+  .ob-step-sub { font-size: 13px; color: var(--text-dim); text-align: center; margin-bottom: 22px; line-height: 1.5; }
+  .ob-site-type-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: var(--bg-card); border: 1px solid var(--border-light); border-radius: 10px; margin-bottom: 8px;
+  }
+  .ob-site-type-row .ob-count { width: 70px; }
+  .ob-site-type-row .ob-price { width: 90px; }
+  .ob-footer { display: flex; gap: 8px; margin-top: 22px; align-items: center; }
+  .ob-skip-link { text-align: center; margin-top: 14px; }
+  .ob-skip-link a { font-size: 12px; color: var(--text-dim); cursor: pointer; text-decoration: underline; }
+  .ob-toggle-row {
+    display: flex; align-items: center; justify-content: space-between; padding: 10px 12px;
+    background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border-light); margin-bottom: 8px;
+  }
   .form-actions .btn { flex: 1; padding: 11px 0; font-size: 14px; }
   .err { color: #ef9a9a; font-size: 11px; margin-top: 3px; }
 
@@ -1726,9 +1759,12 @@ app.post('/refund', async (req, res) => {
     <div style="margin-top:auto;padding:20px">
       <details style="opacity:0.3">
         <summary style="font-size:10px;color:var(--text-dim);cursor:pointer;list-style:none;text-align:center">Developer tools</summary>
-        <div style="margin-top:8px;text-align:center">
+        <div style="margin-top:8px;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
           <button onclick="openDemoModal()" style="background:none;border:1px solid #557a63;border-radius:6px;padding:5px 12px;color:#557a63;font-size:11px;cursor:pointer">
             🎬 Load Demo Data
+          </button>
+          <button onclick="openOnboardingWizard()" style="background:none;border:1px solid #557a63;border-radius:6px;padding:5px 12px;color:#557a63;font-size:11px;cursor:pointer">
+            🧭 Re-run Setup Wizard
           </button>
         </div>
       </details>
@@ -2586,6 +2622,14 @@ app.post('/refund', async (req, res) => {
       <button class="btn btn-outline" style="padding:5px 10px;font-size:12px" onclick="closeModal()">✕ Close</button>
     </div>
     <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Onboarding Wizard -->
+<div id="onboarding-overlay">
+  <div id="onboarding-card">
+    <div id="onboarding-dots"></div>
+    <div id="onboarding-body"></div>
   </div>
 </div>
 
@@ -4804,6 +4848,10 @@ window.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('#header').forEach((el,i)=>{ if(i>0) el.removeAttribute('id'); });
   // Signal that startup load is complete
   window._appReady = true;
+
+  // First-run onboarding wizard — only for a brand new park with no sites configured yet
+  try { if (typeof shouldShowOnboardingWizard === 'function' && shouldShowOnboardingWizard()) openOnboardingWizard(); }
+  catch(e) { console.warn('Onboarding wizard error:', e); }
 });
 
 // ── Date Range Calendar ──────────────────────────────────────────────────────
@@ -10792,8 +10840,311 @@ async function renderWeatherWidget() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// ANPR PLACEHOLDER
+// ONBOARDING WIZARD (first-run setup)
 // ══════════════════════════════════════════════════════════════
+//
+// NOTE FOR FUTURE SESSIONS: this wizard is a hand-built, fixed sequence
+// of steps. It does NOT automatically pick up new Settings fields added
+// later — if you add a new first-run-relevant setting to the app, you
+// need to manually add a step/field here too, or it just won't be part
+// of the wizard (the setting will still work fine via Settings directly,
+// it just won't be offered during first-run setup).
+//
+// Every field the wizard collects is saved through the SAME real save
+// path Settings uses (it writes into the actual Settings <input> DOM
+// elements, then calls saveParkInfo()/saveSitePositions() etc.) rather
+// than a separate data path — so nothing gets out of sync.
+
+const ONBOARDING_STEPS = ['welcome','basics','sites','guests','afterhours','weather','finish'];
+const ONBOARDING_CONFIG_STEPS = ['basics','sites','guests','afterhours','weather'];
+let _obStep = 0;
+
+function shouldShowOnboardingWizard() {
+  if (localStorage.getItem('sitehelm_onboarding_done') === 'true') return false;
+  if (SITES.length > 0) return false; // only for a genuinely fresh park with no sites yet
+  return true;
+}
+
+function openOnboardingWizard() {
+  _obStep = 0;
+  document.getElementById('onboarding-overlay')?.classList.add('open');
+  renderOnboardingStep();
+}
+
+function closeOnboardingWizard(markDone=true) {
+  if (markDone) localStorage.setItem('sitehelm_onboarding_done', 'true');
+  document.getElementById('onboarding-overlay')?.classList.remove('open');
+}
+
+function obSkipAll() {
+  closeOnboardingWizard(true);
+  notify('Setup skipped — configure everything anytime in Settings, or reopen this wizard from Backup → Developer tools.', '#f9c74f');
+}
+
+function obGoNext() {
+  try {
+    if (obSaveCurrentStep() === false) return; // validation failed — stay on this step
+  } catch(e) {
+    console.warn('Onboarding step save error:', e); // never let a save hiccup trap the user on a step
+  }
+  if (_obStep < ONBOARDING_STEPS.length - 1) { _obStep++; renderOnboardingStep(); }
+}
+
+function obGoBack() {
+  if (_obStep > 0) { _obStep--; renderOnboardingStep(); }
+}
+
+// Persist whatever the current step collected, using the real Settings save path
+function obSaveCurrentStep() {
+  const step = ONBOARDING_STEPS[_obStep];
+
+  if (step === 'basics') {
+    const set = (id, val) => { const el=document.getElementById(id); if(el) el.value = val; };
+    set('park-wifi-name',    document.getElementById('ob-wifi-name')?.value.trim()   || '');
+    set('park-wifi-pass',    document.getElementById('ob-wifi-pass')?.value.trim()   || '');
+    set('park-phone',        document.getElementById('ob-phone')?.value.trim()       || '');
+    set('park-checkin-time', document.getElementById('ob-checkin-time')?.value.trim()|| '2:00pm');
+    saveParkInfo();
+  }
+
+  if (step === 'sites') {
+    obCreateSitesFromInputs();
+  }
+
+  if (step === 'guests') {
+    const chk = (id, val) => { const el=document.getElementById(id); if(el) el.checked = val; };
+    chk('park-collect-children', !!document.getElementById('ob-collect-children')?.checked);
+    chk('park-collect-pets',     !!document.getElementById('ob-collect-pets')?.checked);
+    saveParkInfo();
+  }
+
+  if (step === 'afterhours') {
+    const set = (id, val) => { const el=document.getElementById(id); if(el) el.value = val; };
+    set('park-auto-send-checkin', document.getElementById('ob-auto-send')?.value    || '14:00');
+    set('park-gate-code',         document.getElementById('ob-gate-code')?.value.trim() || '');
+    saveParkInfo();
+  }
+
+  if (step === 'weather') {
+    const set = (id, val) => { const el=document.getElementById(id); if(el) el.value = val; };
+    set('park-weather-lat', document.getElementById('ob-weather-lat')?.value.trim() || '');
+    set('park-weather-lon', document.getElementById('ob-weather-lon')?.value.trim() || '');
+    saveParkInfo();
+  }
+
+  return true;
+}
+
+const OB_SITE_TYPE_ORDER = ['powered','unpowered','cabin','ensuite','villa','glamping','overflow'];
+const OB_SITE_PREFIX      = { powered:'P', unpowered:'U', cabin:'C', ensuite:'E', villa:'V', glamping:'G', overflow:'OV' };
+const OB_SITE_DEFAULT_PRICE = { powered:55, unpowered:38, cabin:120, ensuite:75, villa:185, glamping:95, overflow:28 };
+
+function obCreateSitesFromInputs() {
+  const park = getActivePark();
+  const raw = localStorage.getItem('site_manager_data');
+  const mgrData = raw ? JSON.parse(raw) : { added:[], edited:[], deleted:[] };
+  let created = 0;
+
+  OB_SITE_TYPE_ORDER.forEach(type => {
+    const count = parseInt(document.getElementById(`ob-site-count-${type}`)?.value, 10) || 0;
+    if (count <= 0) return;
+    const price = parseFloat(document.getElementById(`ob-site-price-${type}`)?.value) || OB_SITE_DEFAULT_PRICE[type];
+    const prefix = OB_SITE_PREFIX[type];
+
+    // Find the next free number for this prefix so re-running the wizard never collides
+    let maxNum = 0;
+    SITES.forEach(s => {
+      if (s.id.startsWith(prefix)) {
+        const n = parseInt(s.id.slice(prefix.length), 10);
+        if (Number.isFinite(n) && n > maxNum) maxNum = n;
+      }
+    });
+
+    for (let i = 1; i <= count; i++) {
+      const num = maxNum + i;
+      const id = `${prefix}${num}`;
+      const newSite = {
+        id, label: id, type, price,
+        lat: park.lat + (Math.random()-0.5)*0.002,
+        lng: park.lng + (Math.random()-0.5)*0.003,
+      };
+      SITES.push(newSite);
+      mgrData.added.push(newSite);
+      created++;
+    }
+  });
+
+  if (created > 0) {
+    localStorage.setItem('site_manager_data', JSON.stringify(mgrData));
+    saveSitePositions();
+    try { refreshAll(); } catch(e) { console.warn('refreshAll error after onboarding site creation:', e); }
+  }
+}
+
+function obStepIcon(step) {
+  return { welcome:'🧭', basics:'🌿', sites:'🏕️', guests:'👨‍👩‍👧‍👦', afterhours:'🌙', weather:'🌤️', finish:'🎉' }[step] || '📋';
+}
+
+function renderOnboardingStep() {
+  const step = ONBOARDING_STEPS[_obStep];
+  const dotsEl = document.getElementById('onboarding-dots');
+  const bodyEl = document.getElementById('onboarding-body');
+  if (!dotsEl || !bodyEl) return;
+
+  // Dots only represent the middle configuration steps, not the welcome/finish bookends
+  const configIdx = ONBOARDING_CONFIG_STEPS.indexOf(step);
+  if (configIdx === -1) {
+    dotsEl.innerHTML = '';
+  } else {
+    dotsEl.innerHTML = ONBOARDING_CONFIG_STEPS.map((s,i) => {
+      const cls = i===configIdx ? 'ob-dot active' : (i<configIdx ? 'ob-dot done' : 'ob-dot');
+      return `<div class="${cls}"></div>`;
+    }).join('');
+  }
+
+  const info = getParkInfo();
+  const park = getActivePark();
+  const skipLink = `<div class="ob-skip-link"><a onclick="obSkipAll()">Skip setup — I'll configure this later in Settings</a></div>`;
+
+  if (step === 'welcome') {
+    bodyEl.innerHTML = `
+      <div class="ob-step-icon">${obStepIcon(step)}</div>
+      <div class="ob-step-title">Welcome to SiteHelm!</div>
+      <div class="ob-step-sub">Let's get <strong>${park.name}</strong> set up. This takes about 2 minutes and covers the essentials — you can change any of it later in Settings.</div>
+      <div class="ob-footer">
+        <button class="btn btn-green" style="flex:1;padding:12px" onclick="obGoNext()">Let's Go →</button>
+      </div>
+      ${skipLink}
+    `;
+    return;
+  }
+
+  if (step === 'basics') {
+    bodyEl.innerHTML = `
+      <div class="ob-step-icon">${obStepIcon(step)}</div>
+      <div class="ob-step-title">Park Basics</div>
+      <div class="ob-step-sub">This info is shown to guests in welcome messages and on the self check-in pages.</div>
+      <div class="form-row">
+        <div class="form-field"><label>WiFi Network Name</label><input type="text" id="ob-wifi-name" value="${info.wifiName||''}" placeholder="ParkGuest"></div>
+        <div class="form-field"><label>WiFi Password</label><input type="text" id="ob-wifi-pass" value="${info.wifiPass||''}" placeholder="Billabong22"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Reception Phone</label><input type="text" id="ob-phone" value="${info.phone||''}" placeholder="08 9xxx xxxx"></div>
+        <div class="form-field"><label>Check-in Time</label><input type="text" id="ob-checkin-time" value="${info.checkinTime||'2:00pm'}" placeholder="2:00pm"></div>
+      </div>
+      <div class="ob-footer">
+        <button class="btn btn-outline" onclick="obGoBack()">← Back</button>
+        <button class="btn btn-green" style="flex:1;padding:12px" onclick="obGoNext()">Next →</button>
+      </div>
+      ${skipLink}
+    `;
+    return;
+  }
+
+  if (step === 'sites') {
+    const existingNote = SITES.length > 0
+      ? `<div style="font-size:12px;color:#f9c74f;background:rgba(249,199,79,0.1);border-radius:8px;padding:8px 12px;margin-bottom:14px">You already have ${SITES.length} site${SITES.length!==1?'s':''} configured. Enter counts below to add more, or leave everything at 0 and click Next to skip.</div>`
+      : '';
+    const rows = OB_SITE_TYPE_ORDER.map(type => {
+      const tc = TYPE[type];
+      return `<div class="ob-site-type-row">
+        <div style="flex:1;font-size:13px;font-weight:700;color:var(--text-primary)">${tc.icon} ${tc.label}</div>
+        <div class="form-field ob-count" style="margin:0"><label style="font-size:10px">Count</label><input type="number" min="0" id="ob-site-count-${type}" value="0" style="padding:7px 9px"></div>
+        <div class="form-field ob-price" style="margin:0"><label style="font-size:10px">Price/night</label><input type="number" min="0" id="ob-site-price-${type}" value="${OB_SITE_DEFAULT_PRICE[type]}" style="padding:7px 9px"></div>
+      </div>`;
+    }).join('');
+    bodyEl.innerHTML = `
+      <div class="ob-step-icon">${obStepIcon(step)}</div>
+      <div class="ob-step-title">Add Your Sites</div>
+      <div class="ob-step-sub">How many of each site type do you have? Sites are created automatically with sequential IDs (P1, P2…) — reposition them on the Live Map anytime with 📍 Position Sites.</div>
+      ${existingNote}
+      ${rows}
+      <div class="ob-footer">
+        <button class="btn btn-outline" onclick="obGoBack()">← Back</button>
+        <button class="btn btn-green" style="flex:1;padding:12px" onclick="obGoNext()">Next →</button>
+      </div>
+      ${skipLink}
+    `;
+    return;
+  }
+
+  if (step === 'guests') {
+    bodyEl.innerHTML = `
+      <div class="ob-step-icon">${obStepIcon(step)}</div>
+      <div class="ob-step-title">Guest Information</div>
+      <div class="ob-step-sub">Choose what you'd like to collect when guests book. Children count is always collected regardless of these toggles.</div>
+      <div class="ob-toggle-row">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary)">👶 Age group detail for children</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Show infant/toddler/child/teen selector when booking</div>
+        </div>
+        <input type="checkbox" id="ob-collect-children" ${info.collectChildren?'checked':''} style="width:20px;height:20px;cursor:pointer;accent-color:#52B788;flex-shrink:0;margin-left:12px">
+      </div>
+      <div class="ob-toggle-row">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text-primary)">🐕 Collect pet information</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Toggle off if pets aren't permitted at your park</div>
+        </div>
+        <input type="checkbox" id="ob-collect-pets" ${info.collectPets?'checked':''} style="width:20px;height:20px;cursor:pointer;accent-color:#52B788;flex-shrink:0;margin-left:12px">
+      </div>
+      <div class="ob-footer">
+        <button class="btn btn-outline" onclick="obGoBack()">← Back</button>
+        <button class="btn btn-green" style="flex:1;padding:12px" onclick="obGoNext()">Next →</button>
+      </div>
+      ${skipLink}
+    `;
+    return;
+  }
+
+  if (step === 'afterhours') {
+    bodyEl.innerHTML = `
+      <div class="ob-step-icon">${obStepIcon(step)}</div>
+      <div class="ob-step-title">After Hours &amp; Gate Code</div>
+      <div class="ob-step-sub">Used for guests arriving after hours who self check-in via the gate noticeboard.</div>
+      <div class="form-row">
+        <div class="form-field"><label>Auto-Send Check-In Link Time</label><input type="time" id="ob-auto-send" value="${info.autoSendCheckinTime||'14:00'}"></div>
+        <div class="form-field"><label>After Hours Gate Code</label><input type="text" id="ob-gate-code" value="${info.gateCode||''}" placeholder="e.g. 4821"></div>
+      </div>
+      <div class="ob-footer">
+        <button class="btn btn-outline" onclick="obGoBack()">← Back</button>
+        <button class="btn btn-green" style="flex:1;padding:12px" onclick="obGoNext()">Next →</button>
+      </div>
+      ${skipLink}
+    `;
+    return;
+  }
+
+  if (step === 'weather') {
+    bodyEl.innerHTML = `
+      <div class="ob-step-icon">${obStepIcon(step)}</div>
+      <div class="ob-step-title">Weather Widget</div>
+      <div class="ob-step-sub">Powers the weather shown on your Dashboard and gate noticeboard. Leave blank to use a default location — you can look up exact coordinates on Google Maps (right-click your park → coordinates shown at the top).</div>
+      <div class="form-row">
+        <div class="form-field"><label>Latitude</label><input type="text" id="ob-weather-lat" value="${info.weatherLat||''}" placeholder="-31.8917"></div>
+        <div class="form-field"><label>Longitude</label><input type="text" id="ob-weather-lon" value="${info.weatherLon||''}" placeholder="116.1667"></div>
+      </div>
+      <div class="ob-footer">
+        <button class="btn btn-outline" onclick="obGoBack()">← Back</button>
+        <button class="btn btn-green" style="flex:1;padding:12px" onclick="obGoNext()">Next →</button>
+      </div>
+      ${skipLink}
+    `;
+    return;
+  }
+
+  if (step === 'finish') {
+    bodyEl.innerHTML = `
+      <div class="ob-step-icon">${obStepIcon(step)}</div>
+      <div class="ob-step-title">You're all set!</div>
+      <div class="ob-step-sub">${park.name} is ready to go. You can fine-tune anything from Settings at any time.</div>
+      <div class="ob-footer" style="flex-direction:column">
+        <button class="btn btn-green" style="width:100%;padding:12px" onclick="closeOnboardingWizard(true); notify('🎉 Setup complete — welcome to SiteHelm!');">Go to Dashboard →</button>
+        <button class="btn btn-outline" style="width:100%" onclick="closeOnboardingWizard(true); openDemoModal();">🎬 Or explore with demo data first</button>
+      </div>
+    `;
+    return;
+  }
+}
 
 function renderAnprPlaceholder() {
   // Nothing to render dynamically — all static HTML
