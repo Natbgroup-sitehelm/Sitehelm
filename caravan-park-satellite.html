@@ -4593,7 +4593,7 @@ function confirmCancelBooking(id) {
   if (_ccb) logActivity('booking_cancelled', { bookingId:_ccb.id, guest:_ccb.guest, siteId:_ccb.siteId, checkIn:_ccb.checkIn, checkOut:_ccb.checkOut, total:_ccb.total });
   notify('Booking cancelled.', '#F57F17');
   // Check waitlist for matches
-  if (_ccb && typeof checkWaitlistMatches === 'function') setTimeout(()=>checkWaitlistMatches(_ccb), 600);
+  if (_ccb && typeof checkWaitlistMatches === 'function') setTimeout(()=>checkWaitlistMatches(_ccb, 'cancellation'), 600);
 }
 
 // ── Bookings tab ──────────────────────────────────────────────────────────────
@@ -11677,12 +11677,17 @@ function confirmBlockSite() {
 }
 
 function removeBlock(blockId) {
-  const blocks = loadSiteBlocks().filter(b => b.id !== blockId);
+  const removed = loadSiteBlocks().find(b => b.id === blockId);
+  const blocks  = loadSiteBlocks().filter(b => b.id !== blockId);
   saveSiteBlocks(blocks);
   refreshAll();
   buildMarkers();
   renderActiveBlocks();
   notify('Block removed — site now available');
+  // A block being removed frees the site up just like a cancellation/checkout does
+  if (removed && typeof checkWaitlistMatches === 'function') {
+    checkWaitlistMatches({ siteId: removed.siteId, checkIn: removed.from, checkOut: removed.to }, 'block removed');
+  }
 }
 
 // ── Show blocks on the availability grid ─────────────────────────────────────
@@ -12772,11 +12777,14 @@ function renderWaitlistView() {
     const sl  = statusLabel[entry.status] || entry.status;
     const dt  = new Date(entry.addedAt).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
     const isActive = entry.status==='waiting'||entry.status==='notified';
+    const isMatched = entry.status==='waiting' && entry.matchedSiteId;
+    const matchedSite = isMatched ? SITES.find(s=>s.id===entry.matchedSiteId) : null;
 
-    return `<tr style="border-bottom:1px solid #1e3d28;${!isActive?'opacity:0.5':''}">
+    return `<tr style="border-bottom:1px solid #1e3d28;${!isActive?'opacity:0.5':''}${isMatched?'background:rgba(249,199,74,0.08);border-left:3px solid #f9c74f':''}">
       <td style="padding:10px 12px">
         <div style="font-weight:700;color:#fff;font-size:13px">${entry.guest}</div>
         ${entry.notes?`<div style="font-size:10px;color:#557a63;margin-top:2px">${entry.notes}</div>`:''}
+        ${isMatched?`<div style="font-size:11px;color:#f9c74f;font-weight:700;margin-top:3px">🎯 ${matchedSite?.label||entry.matchedSiteId} available now — contact them</div>`:''}
       </td>
       <td style="padding:10px 12px;color:#e8f0e9;font-size:12px">${fmtDate(entry.checkIn)} → ${fmtDate(entry.checkOut)}</td>
       <td style="padding:10px 12px;color:#74c69d;font-weight:700">${n}n</td>
@@ -12801,26 +12809,38 @@ function renderWaitlistView() {
   }).join('');
 }
 
-// ── Auto-match waitlist when a booking is cancelled ───────────────────────────
-function checkWaitlistMatches(cancelledBooking) {
-  const wl = loadWaitlist().filter(x=>x.status==='waiting');
-  const matches = wl.filter(entry => {
-    // Dates overlap with the now-freed slot
-    const datesMatch = entry.checkIn < cancelledBooking.checkOut && entry.checkOut > cancelledBooking.checkIn;
-    // Type matches if preference set
-    const site = SITES.find(s=>s.id===cancelledBooking.siteId);
-    const typeMatch = !entry.prefType || site?.type === entry.prefType;
-    return datesMatch && typeMatch;
+// ── Auto-match waitlist whenever a site frees up (cancellation, checkout, or a
+// site block being removed) ──────────────────────────────────────────────────
+// IMPORTANT: this only surfaces the match to staff — it never contacts the
+// waitlisted guest automatically. A staff member always has to click
+// "📞 Notified" (or use the phone/email link) on the waitlist entry
+// themselves before the guest hears anything. This is a deliberate product
+// decision, not an oversight — don't add auto-SMS/email here.
+function checkWaitlistMatches(freedBooking, source='cancellation') {
+  if (!freedBooking) return;
+  const wl = loadWaitlist();
+  const site = SITES.find(s=>s.id===freedBooking.siteId);
+  let matchCount = 0;
+
+  const updated = wl.map(entry => {
+    if (entry.status !== 'waiting') return entry;
+    const datesMatch = entry.checkIn < freedBooking.checkOut && entry.checkOut > freedBooking.checkIn;
+    const typeMatch  = !entry.prefType || site?.type === entry.prefType;
+    if (datesMatch && typeMatch) {
+      matchCount++;
+      // Flag the match on the entry itself so it's visible later — not just
+      // in a toast that vanishes if nobody's looking at the screen right now.
+      return { ...entry, matchedSiteId: freedBooking.siteId, matchedAt: new Date().toISOString(), matchSource: source };
+    }
+    return entry;
   });
 
-  if (matches.length > 0) {
-    const names = matches.map(m=>m.guest).join(', ');
-    notify(`📣 Cancellation match! ${matches.length} waitlisted guest${matches.length>1?'s':''} want these dates: ${names}`, '#f9c74f');
-    // Switch to waitlist view to show the matches
-    setTimeout(() => {
-      mvActiveFilter = 'waitlist';
-      switchTab('movements');
-    }, 1500);
+  if (matchCount > 0) {
+    saveWaitlist(updated);
+    const names = updated.filter(e=>e.matchedSiteId===freedBooking.siteId && e.status==='waiting').map(m=>m.guest).join(', ');
+    notify(`📣 ${site?.label||freedBooking.siteId} just freed up — ${matchCount} waitlisted guest${matchCount>1?'s':''} want these dates: ${names}`, '#f9c74f');
+    if (typeof renderMapAlerts === 'function') renderMapAlerts();
+    if (typeof renderWaitlistView === 'function') renderWaitlistView();
   }
 }
 
@@ -14122,6 +14142,19 @@ function renderMapAlerts() {
     onclick:'switchTab("bookings")'
   });
 
+  // Waitlist matches — a site freed up (cancellation/checkout/block removed)
+  // and matches someone still waiting. This is a persistent alert (unlike the
+  // one-off toast that fires at the moment of the match) so it isn't lost if
+  // nobody was looking at the screen when it happened. Staff still have to
+  // manually contact the guest — nothing here does that automatically.
+  const wlMatches = loadWaitlist().filter(x => x.status==='waiting' && x.matchedSiteId);
+  if (wlMatches.length) alerts.push({
+    icon:'🎯', color:'#f9c74f', bg:'rgba(249,199,74,0.15)',
+    text:`${wlMatches.length} waitlist match${wlMatches.length!==1?'es':''} — needs contact`,
+    sub: wlMatches.map(m=>`${m.guest} (${SITES.find(s=>s.id===m.matchedSiteId)?.label||m.matchedSiteId})`).join(', '),
+    onclick:'mvActiveFilter="waitlist";switchTab("movements")'
+  });
+
   if (!alerts.length) {
     el.style.display = 'none';
     return;
@@ -14924,6 +14957,8 @@ function confirmCheckout(bookingId) {
   buildMarkers();
   notify(`👋 ${bookings[idx]?.guest||'Guest'} checked out — see you next time!`, '#52B788');
   logActivity('check_out', { bookingId, guest:bookings[idx]?.guest, siteId:bookings[idx]?.siteId });
+  // A normal checkout frees the site up too — check the waitlist, not just cancellations
+  if (typeof checkWaitlistMatches === 'function') setTimeout(()=>checkWaitlistMatches(bookings[idx], 'checkout'), 600);
 }
 
 // ── Late checkout detection ───────────────────────────────────────────────────
