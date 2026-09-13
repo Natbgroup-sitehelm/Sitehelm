@@ -906,13 +906,24 @@
     <div id="sidebar">
       <div id="stats">
         <div class="stat-card">
-          <div class="stat-val" id="stat-occupied">0</div>
-          <div class="stat-lbl">Expect Arrival</div>
+          <div class="stat-val" id="stat-arrivals">0</div>
+          <div class="stat-lbl">Arrivals Today</div>
+        </div>
+        <div class="stat-card" style="border-left-color:#f97316">
+          <div class="stat-val" style="color:#f97316" id="stat-departures">0</div>
+          <div class="stat-lbl">Departures Today</div>
         </div>
         <div class="stat-card" style="border-left-color:#f9c74f">
           <div class="stat-val" style="color:#f9c74f" id="stat-available">0</div>
           <div class="stat-lbl">Available Today</div>
         </div>
+        <div class="stat-card" style="border-left-color:#52B788">
+          <div class="stat-val" style="color:#52B788" id="stat-occupancy">0%</div>
+          <div class="stat-lbl">Occupancy</div>
+        </div>
+      </div>
+      <div id="stat-outstanding-strip" style="display:none;margin:0 12px 8px;padding:6px 10px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);border-radius:8px;font-size:11px;color:#ef9a9a;align-items:center;justify-content:space-between;gap:6px">
+        <span>💳 Outstanding: <strong id="stat-outstanding-val">A$0</strong></span>
       </div>
       <div id="sidebar-header">
         <h3>All Sites</h3>
@@ -923,15 +934,16 @@
     <!-- Map -->
     <div id="map-container">
 
-      <!-- Colour legend strip -->
+      <!-- Colour legend strip — click a status to isolate/hide it on the map -->
       <div id="map-legend-strip" style="position:absolute;top:0;left:0;right:0;z-index:500;background:rgba(15,31,21,0.88);backdrop-filter:blur(6px);padding:5px 12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-bottom:1px solid rgba(82,183,136,0.2)">
-        <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#52B788;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Available</span></div>
-        <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#3d44c7;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Booked</span></div>
-        <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#e8950a;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Checked In</span></div>
-        <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#C62828;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Occupied</span></div>
-        <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#e55a00;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Needs Cleaning</span></div>
-        <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#1565c0;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Being Cleaned</span></div>
-        <div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#c05a00;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Maintenance</span></div>
+        <div class="legend-filter-item" data-status="available" onclick="toggleMapStatusFilter('available',this)" title="Click to hide/show Available sites" style="cursor:pointer;display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#52B788;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Available</span></div>
+        <div class="legend-filter-item" data-status="booked" onclick="toggleMapStatusFilter('booked',this)" title="Click to hide/show Booked sites" style="cursor:pointer;display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#3B82F6;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Booked</span></div>
+        <div class="legend-filter-item" data-status="checked-in" onclick="toggleMapStatusFilter('checked-in',this)" title="Click to hide/show Checked In sites" style="cursor:pointer;display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#FBBF24;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Checked In</span></div>
+        <div class="legend-filter-item" data-status="occupied" onclick="toggleMapStatusFilter('occupied',this)" title="Click to hide/show Occupied sites" style="cursor:pointer;display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#EF4444;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Occupied</span></div>
+        <div class="legend-filter-item" data-status="hk-dirty" onclick="toggleMapStatusFilter('hk-dirty',this)" title="Click to hide/show sites needing cleaning" style="cursor:pointer;display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#FB923C;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Needs Cleaning</span></div>
+        <div class="legend-filter-item" data-status="hk-cleaning" onclick="toggleMapStatusFilter('hk-cleaning',this)" title="Click to hide/show sites being cleaned" style="cursor:pointer;display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#14B8A6;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Being Cleaned</span></div>
+        <div class="legend-filter-item" data-status="blocked" onclick="toggleMapStatusFilter('blocked',this)" title="Click to hide/show blocked/maintenance sites" style="cursor:pointer;display:flex;align-items:center;gap:5px"><div style="width:12px;height:12px;border-radius:3px;background:#DB2777;flex-shrink:0"></div><span style="font-size:10px;color:#a7d4bc;font-weight:600">Maintenance</span></div>
+        <button onclick="clearMapStatusFilters()" id="map-filter-clear-btn" style="display:none;background:none;border:1px solid rgba(82,183,136,0.4);border-radius:5px;color:#52B788;font-size:10px;padding:2px 7px;cursor:pointer">✕ Clear filter</button>
         <!-- Live indicator -->
         <div style="margin-left:auto;display:flex;align-items:center;gap:5px">
           <div style="width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 6px #4ade80;animation:pulse 2s infinite"></div>
@@ -997,6 +1009,9 @@
           <button class="upload-map-btn" onclick="fitMarkersToScreen()" style="margin-top:4px">
             📍 Find My Markers
           </button>
+          <button class="upload-map-btn" onclick="locateMeOnMap()" style="margin-top:4px">
+            📌 My Location
+          </button>
           <input type="file" id="custom-map-file" accept="image/*,.pdf,application/pdf" style="display:none" onchange="handleCustomMapUpload(event)">
           <div id="custom-map-info">Upload a JPG, PNG, WebP or <strong>PDF</strong> scan of your park drawing. It will be overlaid on the map aligned to your park coordinates.</div>
         </div>
@@ -1058,7 +1073,7 @@
         <h4>Legend</h4>
         <div class="legend-item"><div class="legend-dot" style="background:#52B788"></div> Available</div>
         <div class="legend-item"><div class="legend-dot" style="background:#7C83FD"></div> Booked</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#C62828"></div> Expect Arrival</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#C62828"></div> Occupied</div>
         <div class="legend-item"><div class="legend-dot" style="background:#f9c74f"></div> Checked In</div>
         <div class="legend-item"><div class="legend-dot" style="background:#FF6B35"></div> Needs Cleaning</div>
         <div class="legend-item"><div class="legend-dot" style="background:#2196F3"></div> Being Cleaned</div>
@@ -1673,7 +1688,7 @@ app.post('/refund', async (req, res) => {
     <div id="grid-legend">
       <div class="grid-legend-item"><div class="grid-legend-swatch" style="background:#0f2418;border:1px solid #1e3d28"></div> Available</div>
       <div class="grid-legend-item"><div class="grid-legend-swatch" style="background:#4a4fd4"></div> Booked</div>
-      <div class="grid-legend-item"><div class="grid-legend-swatch" style="background:#C62828"></div> Expect Arrival</div>
+      <div class="grid-legend-item"><div class="grid-legend-swatch" style="background:#C62828"></div> Occupied</div>
       <div class="grid-legend-item"><div class="grid-legend-swatch" style="background:#b8890a"></div> Checked In</div>
       <div class="grid-legend-item" style="margin-left:auto"><span style="color:#74c69d">Click any available cell to start a booking &nbsp;·&nbsp; Click a booked cell to view the booking</span></div>
     </div>
@@ -2800,9 +2815,11 @@ function fmtDateTime(iso) {
 const BLOCK_KEY = 'sitehelm_blocks';
 
 const BLOCK_TYPES = {
-  maintenance: { label:'Maintenance', icon:'🔧', color:'#f97316', bg:'#3a1a00', markerColor:'#f97316' },
-  reserved:    { label:'Reserved',    icon:'🔒', color:'#7C83FD', bg:'#1a1a3d', markerColor:'#7C83FD' },
-  outoforder:  { label:'Out of Order',icon:'🚫', color:'#ef4444', bg:'#3a0000', markerColor:'#ef4444' },
+  maintenance: { label:'Maintenance', icon:'🔧', color:'#DB2777', bg:'#3a0f2a', markerColor:'#DB2777' },
+  reserved:    { label:'Reserved',    icon:'🔒', color:'#8B5CF6', bg:'#241a3d', markerColor:'#8B5CF6' },
+  // Distinct maroon rather than bright red — an out-of-order block was
+  // previously the exact same colour as an "Occupied" site on the map.
+  outoforder:  { label:'Out of Order',icon:'🚫', color:'#78350F', bg:'#2a1400', markerColor:'#78350F' },
 };
 
 let _blockType = 'maintenance';
@@ -3096,13 +3113,52 @@ function siteStatusToday(siteId) {
 }
 
 // ── Map ───────────────────────────────────────────────────────────────────────
+const MAP_VIEW_KEY = 'sitehelm_map_view_' + (getActivePark()?.id || 'default');
+
+function loadSavedMapView() {
+  try { return JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || 'null'); }
+  catch(e) { return null; }
+}
+function saveMapView() {
+  try {
+    const c = map.getCenter();
+    localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat:c.lat, lng:c.lng, zoom: map.getZoom() }));
+  } catch(e) { /* ignore */ }
+}
+
+const _savedMapView = loadSavedMapView();
+
 const map = L.map('map', {
   zoomControl:    true,
   maxZoom:        21,
   zoomDelta:      0.5,   // half-step zoom increments (scroll wheel)
   zoomSnap:       0.5,   // snap to 0.5 zoom levels
   wheelPxPerZoomLevel: 120, // pixels of scroll per zoom step (higher = slower)
-}).setView([-31.86400359547606, 116.7707586548024], 18);
+}).setView(
+  _savedMapView ? [_savedMapView.lat, _savedMapView.lng] : [-31.86400359547606, 116.7707586548024],
+  _savedMapView ? _savedMapView.zoom : 18
+);
+
+// First-ever load for this park (nothing saved yet): auto-fit to the actual
+// site markers instead of the generic wide default view.
+if (!_savedMapView) {
+  setTimeout(() => {
+    try {
+      const withPos = SITES.filter(s => s.lat && s.lng);
+      if (withPos.length) {
+        map.fitBounds(L.latLngBounds(withPos.map(s => [s.lat, s.lng])), { padding:[70,70], maxZoom:20 });
+      }
+    } catch(e) { console.warn('Initial map fit error:', e); }
+  }, 250);
+}
+
+// Persist the view (debounced) whenever the user pans/zooms, so Live Map
+// reopens where they left it instead of resetting every time.
+let _mapViewSaveTimer = null;
+map.on('moveend zoomend', () => {
+  clearTimeout(_mapViewSaveTimer);
+  _mapViewSaveTimer = setTimeout(saveMapView, 400);
+});
 
 // Tile layers are initialised in the layer switching block below
 
@@ -3308,6 +3364,28 @@ function fitMarkersToScreen() {
     map.fitBounds(bounds, { padding:[60,60], maxZoom:20 });
   }
   notify('📍 Zoomed to your site markers', '#52B788');
+}
+
+// ── "My Location" — for staff walking the grounds on a phone/tablet ─────────
+let _myLocationMarker = null;
+function locateMeOnMap() {
+  if (!navigator.geolocation) { notify('Location isn\'t supported on this device', '#f9c74f'); return; }
+  notify('📌 Finding your location…', '#52B788');
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      if (_myLocationMarker) map.removeLayer(_myLocationMarker);
+      _myLocationMarker = L.circleMarker([latitude, longitude], {
+        radius: 9, color:'#fff', weight:2, fillColor:'#3B82F6', fillOpacity:0.9,
+      }).addTo(map).bindTooltip('You are here', { permanent:false });
+      map.setView([latitude, longitude], Math.max(map.getZoom(), 19));
+      notify('📌 Centred on your location', '#52B788');
+    },
+    (err) => {
+      notify('Could not get your location — check location permission for this site', '#f9c74f');
+    },
+    { enableHighAccuracy:true, timeout:8000 }
+  );
 }
 
 function _loadOverlayWithBounds(data, corners) {
@@ -3516,11 +3594,15 @@ function updateOverlayFromCorners() {
 }
 
 // Marker size scales with zoom: grows as you zoom in
+// Touch devices get slightly larger tap targets at low zoom — 8px is fine to
+// click with a mouse but hard to tap accurately with a finger on a tablet.
+const _isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 function markerSize() {
   const z = map.getZoom();
-  if (z <= 15) return 8;
-  if (z === 16) return 11;
-  if (z === 17) return 16;
+  const bump = _isTouchDevice ? 5 : 0;
+  if (z <= 15) return 8 + bump;
+  if (z === 16) return 11 + bump;
+  if (z === 17) return 16 + bump;
   if (z === 18) return 22;
   if (z === 19) return 32;
   if (z === 20) return 44;
@@ -3531,17 +3613,37 @@ function makeIcon(site) {
   const {status, block} = siteStatusToday(site.id);
   const tc = TYPE[site.type] || { icon:'📍', label:'Site', markerColor:'#52B788' };
 
-  const bgColor = status==='occupied'      ? '#C62828'
-    : status==='checked-in'               ? '#e8950a'
-    : status==='booked'                   ? '#3d44c7'
-    : status==='hk-dirty'                 ? '#e55a00'
-    : status==='hk-cleaning'              ? '#1565c0'
-    : status==='hk-inspected'             ? '#b8a000'
+  // Distinct hue per status so nothing overlaps at small marker sizes —
+  // occupied/red, checked-in/gold, booked/blue, needs-cleaning/orange,
+  // being-cleaned/teal, awaiting-inspection/grey. Blocked sites pull their
+  // colour from BLOCK_TYPES (single source of truth — see maintenance tab).
+  const bgColor = status==='occupied'      ? '#EF4444'
+    : status==='checked-in'               ? '#FBBF24'
+    : status==='booked'                   ? '#3B82F6'
+    : status==='hk-dirty'                 ? '#FB923C'
+    : status==='hk-cleaning'              ? '#14B8A6'
+    : status==='hk-inspected'             ? '#9CA3AF'
     : status==='blocked'
-      ? (block?.type==='reserved'?'#5c62e8':block?.type==='outoforder'?'#c62828':'#c05a00')
+      ? (BLOCK_TYPES[block?.type]?.markerColor || BLOCK_TYPES.maintenance.markerColor)
     : tc.markerColor || '#52B788';
 
   const isAvailable = status==='available';
+
+  // Open maintenance jobs show as a small badge layered on top of whatever
+  // colour the booking/housekeeping status already gave the marker — a site
+  // can be checked-in AND have an open maintenance job at the same time.
+  let hasOpenMaint = false, isUrgentMaint = false;
+  try {
+    const _maintJobs = (typeof loadMaintenanceJobs === 'function') ? loadMaintenanceJobs() : [];
+    const _label = String(site.label).trim().toUpperCase();
+    const _matches = _maintJobs.filter(j =>
+      (j.status==='open' || j.status==='inprogress' || j.status==='parts') &&
+      (j.locationType==='site' || !j.locationType) &&
+      String(j.location||'').trim().toUpperCase() === _label
+    );
+    hasOpenMaint = _matches.length > 0;
+    isUrgentMaint = _matches.some(j => j.priority==='urgent' || j.priority==='high');
+  } catch(e) { /* ignore — badge just won't show */ }
 
   // Per-site dimensions — fall back to zoom-based square
   const baseSz  = markerSize();
@@ -3576,6 +3678,7 @@ function makeIcon(site) {
       transform-origin:center center;
     ">
       ${isAvailable && showText ? `<div style="position:absolute;top:2px;right:2px;width:${dotSz}px;height:${dotSz}px;border-radius:50%;background:#4ade80"></div>` : ''}
+      ${hasOpenMaint && showText ? `<div title="Open maintenance job" style="position:absolute;bottom:-3px;right:-3px;width:${Math.max(12,Math.round(dotSz*1.7))}px;height:${Math.max(12,Math.round(dotSz*1.7))}px;border-radius:50%;background:${isUrgentMaint?'#ef4444':'#DB2777'};display:flex;align-items:center;justify-content:center;font-size:${Math.max(7,Math.round(dotSz*0.95))}px;border:1px solid rgba(255,255,255,0.9);box-shadow:0 1px 3px rgba(0,0,0,0.5)">🔧</div>` : ''}
       ${showText ? `
         <span style="font-size:${typeSize}px;font-weight:800;color:rgba(255,255,255,0.8);line-height:1;letter-spacing:0.3px;margin-bottom:1px">${prefix}</span>
         <span style="font-size:${numSize}px;font-weight:900;color:#fff;line-height:1;text-shadow:0 1px 2px rgba(0,0,0,0.4)">${number||site.label}</span>
@@ -3594,10 +3697,34 @@ map.on('zoomend', () => {
   });
 });
 
+// ── Map status filter (click a legend chip to isolate/hide that status) ──────
+let _mapHiddenStatuses = new Set();
+
+function toggleMapStatusFilter(status, el) {
+  if (_mapHiddenStatuses.has(status)) _mapHiddenStatuses.delete(status);
+  else _mapHiddenStatuses.add(status);
+  if (el) el.style.opacity = _mapHiddenStatuses.has(status) ? '0.35' : '1';
+  const clearBtn = document.getElementById('map-filter-clear-btn');
+  if (clearBtn) clearBtn.style.display = _mapHiddenStatuses.size ? 'inline-block' : 'none';
+  buildMarkers();
+  renderSidebar();
+}
+
+function clearMapStatusFilters() {
+  _mapHiddenStatuses.clear();
+  document.querySelectorAll('.legend-filter-item').forEach(el => el.style.opacity = '1');
+  const clearBtn = document.getElementById('map-filter-clear-btn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  buildMarkers();
+  renderSidebar();
+}
+
 function buildMarkers() {
   Object.values(markers).forEach(m=>map.removeLayer(m));
   markers = {};
   SITES.forEach(site=>{
+    const {status: _filterStatus} = siteStatusToday(site.id);
+    if (!editMode && _mapHiddenStatuses.has(_filterStatus)) return; // filtered out — skip this marker
     const m = L.marker([site.lat, site.lng], {
       icon: makeIcon(site),
       draggable: editMode,
@@ -3622,7 +3749,7 @@ function buildMarkers() {
         ? `${_tc.icon} ${site.label} — Booked · Arriving ${booking?.checkIn}\n${booking?.guest}`
         : status.startsWith('hk-')
           ? `${_tc.icon} ${site.label} — ${status==='hk-dirty'?'Needs Cleaning':status==='hk-cleaning'?'Being Cleaned':'Awaiting Inspection'}`
-          : `${_tc.icon} ${site.label} — ${status==='checked-in'?'Checked In':'Expect Arrival'}\n${booking?.guest}`;
+          : `${_tc.icon} ${site.label} — ${status==='checked-in'?'Checked In':'Occupied'}\n${booking?.guest}`;
     // Tooltip disabled — replaced by hover card
     // m.bindTooltip(tip, {direction:'top', offset:[0,-markerSize()], className:'', permanent:false});
 
@@ -3670,12 +3797,13 @@ function toggleEditMode() {
 function renderSidebar() {
   const el = document.getElementById('sidebar-content');
   let html = '';
-  let occ=0, avail=0;
+  let occ=0, avail=0, checkedInCount=0;
   SITES.forEach(site=>{
     const {status, booking} = siteStatusToday(site.id);
     if(status==='checked-in' || status==='occupied') occ++;
     else if(status==='booked') occ++; // booked counts as not available
     if(status==='available') avail++;
+    if(status==='checked-in') checkedInCount++;
     const statusClass = status==='available'?'available':'occupied';
     const statusChip = status==='available'
       ? '<span class="chip chip-green">Available</span>'
@@ -3683,7 +3811,8 @@ function renderSidebar() {
         ? '<span class="chip chip-yellow">Checked In</span>'
         : status==='booked'
           ? '<span class="chip" style="background:#1a1b4b;color:#7C83FD">📅 Booked</span>'
-          : '<span class="chip chip-red">Expect Arrival</span>';
+          : '<span class="chip chip-red">Occupied</span>';
+    if (_mapHiddenStatuses.has(status)) return; // respect the map's status filter — stats above are still counted for all sites
     html += `<div class="site-item ${statusClass}" onclick="onSiteClick(SITES.find(s=>s.id==='${site.id}'))">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span class="site-name">${TYPE[site.type].icon} ${site.label}</span>
@@ -3694,9 +3823,33 @@ function renderSidebar() {
       ${booking && status==='booked' ? `<div class="site-guest" style="color:#7C83FD">📅 ${booking.guest} · arrives ${new Date(booking.checkIn+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'})}</div>` : ''}
     </div>`;
   });
+  if (_mapHiddenStatuses.size && !html) {
+    html = '<div style="padding:16px;text-align:center;color:#557a63;font-size:12px">No sites match the current filter — <span style="color:#52B788;cursor:pointer;text-decoration:underline" onclick="clearMapStatusFilters()">clear filter</span></div>';
+  }
   el.innerHTML = html;
-  document.getElementById('stat-occupied').textContent = occ;
-  document.getElementById('stat-available').textContent = avail;
+
+  // Arrivals/departures today — matches ARIA's own definitions for consistency
+  const arrivalsToday   = bookings.filter(b => b.checkIn===TODAY && b.status==='confirmed').length;
+  const departuresToday = bookings.filter(b => b.checkOut===TODAY && b.status==='checked-in').length;
+  const occupancyPct    = SITES.length ? Math.round(checkedInCount/SITES.length*100) : 0;
+  const outstandingTotal = bookings
+    .filter(b => !b.paid && b.status!=='cancelled')
+    .reduce((s,b)=>s+(b.total||0), 0);
+
+  document.getElementById('stat-arrivals').textContent   = arrivalsToday;
+  document.getElementById('stat-departures').textContent = departuresToday;
+  document.getElementById('stat-available').textContent  = avail;
+  document.getElementById('stat-occupancy').textContent  = occupancyPct + '%';
+
+  const outStrip = document.getElementById('stat-outstanding-strip');
+  if (outStrip) {
+    if (outstandingTotal > 0) {
+      document.getElementById('stat-outstanding-val').textContent = 'A$' + outstandingTotal.toFixed(0);
+      outStrip.style.display = 'flex';
+    } else {
+      outStrip.style.display = 'none';
+    }
+  }
 }
 
 // ── Site click ────────────────────────────────────────────────────────────────
@@ -9379,12 +9532,12 @@ function showHoverCard(site, mouseEvent) {
   // Status colour and label
   const statusMap = {
     'available':    { color:'#52B788', label:'Available'         },
-    'booked':       { color:'#7C83FD', label:'Booked'            },
-    'occupied':     { color:'#C62828', label:'Expect Arrival'    },
-    'checked-in':   { color:'#f9c74f', label:'Checked In'        },
-    'hk-dirty':     { color:'#FF6B35', label:'Needs Cleaning'    },
-    'hk-cleaning':  { color:'#2196F3', label:'Being Cleaned'     },
-    'hk-inspected': { color:'#FFD600', label:'Awaiting Inspection'},
+    'booked':       { color:'#3B82F6', label:'Booked'            },
+    'occupied':     { color:'#EF4444', label:'Occupied'          },
+    'checked-in':   { color:'#FBBF24', label:'Checked In'        },
+    'hk-dirty':     { color:'#FB923C', label:'Needs Cleaning'    },
+    'hk-cleaning':  { color:'#14B8A6', label:'Being Cleaned'     },
+    'hk-inspected': { color:'#9CA3AF', label:'Awaiting Inspection'},
   };
   const sm = statusMap[status] || { color:'#52B788', label:'Available' };
 
@@ -11617,12 +11770,12 @@ function showHoverCard(site, mouseEvent) {
 
   const statusMap = {
     'available':    { color:'#52B788', label:'Available'         },
-    'booked':       { color:'#7C83FD', label:'Booked'            },
-    'occupied':     { color:'#C62828', label:'Expect Arrival'    },
-    'checked-in':   { color:'#f9c74f', label:'Checked In'        },
-    'hk-dirty':     { color:'#FF6B35', label:'Needs Cleaning'    },
-    'hk-cleaning':  { color:'#2196F3', label:'Being Cleaned'     },
-    'hk-inspected': { color:'#FFD600', label:'Awaiting Inspection'},
+    'booked':       { color:'#3B82F6', label:'Booked'            },
+    'occupied':     { color:'#EF4444', label:'Occupied'          },
+    'checked-in':   { color:'#FBBF24', label:'Checked In'        },
+    'hk-dirty':     { color:'#FB923C', label:'Needs Cleaning'    },
+    'hk-cleaning':  { color:'#14B8A6', label:'Being Cleaned'     },
+    'hk-inspected': { color:'#9CA3AF', label:'Awaiting Inspection'},
   };
   const sm = statusMap[st2] || { color:'#52B788', label:'Available' };
 
