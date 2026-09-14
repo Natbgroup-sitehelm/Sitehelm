@@ -115,8 +115,7 @@ function nights(ci, co) {
 
 function getSiteType(siteId) {
   try {
-    const sites = JSON.parse(localStorage.getItem('custom_sites') || localStorage.getItem('site_manager_data') || '[]');
-    const site = sites.find(s => s.id === siteId || s.label === siteId);
+    const site = getSite(siteId);
     if (!site) return { icon: '⛺', label: 'Site' };
     const types = {
       powered:   { icon: '⚡', label: 'Powered Site' },
@@ -128,6 +127,63 @@ function getSiteType(siteId) {
     };
     return types[site.type] || { icon: '📍', label: 'Site' };
   } catch(e) { return { icon: '⛺', label: 'Site' }; }
+}
+
+function getSite(siteId) {
+  try {
+    const sites = JSON.parse(localStorage.getItem('custom_sites') || localStorage.getItem('site_manager_data') || '[]');
+    return sites.find(s => s.id === siteId || s.label === siteId) || null;
+  } catch(e) { return null; }
+}
+
+// Default park guidelines — used only if the park hasn't set custom ones in Settings
+const DEFAULT_GUIDELINES = [
+  { icon:'🔇', text:'Quiet hours from 10:00pm to 7:00am. Please keep noise to a minimum out of respect for other guests.' },
+  { icon:'🐕', text:'Pets must be on a leash at all times and owners are responsible for cleaning up.' },
+  { icon:'🚗', text:'Speed limit 10km/h throughout the park. Children have priority.' },
+  { icon:'🔥', text:'Campfires in designated areas only. Always extinguish fully before sleeping.' },
+  { icon:'♻️', text:'Please use the recycling and waste facilities provided. Leave your site clean.' },
+];
+
+function getGuidelines(info) {
+  const raw = (info.guidelines || '').split('\n').map(l => l.trim()).filter(Boolean);
+  if (!raw.length) return DEFAULT_GUIDELINES;
+  return raw.map(line => {
+    // If the line starts with an emoji-ish character, split it off as the icon
+    const match = line.match(/^(\p{Emoji_Presentation}|\p{Extended_Pictographic})\s*(.*)$/u);
+    return match ? { icon: match[1], text: match[2] } : { icon: '📌', text: line };
+  });
+}
+
+function getUpcomingEvents() {
+  try {
+    const events = JSON.parse(localStorage.getItem('sitehelm_events') || '[]');
+    const today = new Date().toISOString().split('T')[0];
+    return events
+      .filter(e => e.showOnNoticeboard && (e.endDate || e.date) >= today)
+      .sort((a,b) => a.date.localeCompare(b.date))
+      .slice(0, 5);
+  } catch(e) { return []; }
+}
+
+function getAmenities() {
+  try { return JSON.parse(localStorage.getItem('sitehelm_facilities') || '[]'); }
+  catch(e) { return []; }
+}
+
+const FACILITY_TYPES = {
+  ablution:   { icon:'🚿', label:'Ablution Block' },
+  toilet:     { icon:'🚻', label:'Toilet Block'   },
+  laundry:    { icon:'👕', label:'Laundry Room'   },
+  bbq:        { icon:'🍖', label:'BBQ Area'       },
+  kitchen:    { icon:'🍽️', label:'Camp Kitchen'   },
+  pool:       { icon:'🏊', label:'Pool Area'      },
+  playground: { icon:'🛝', label:'Playground'     },
+};
+
+function directionsUrl(site) {
+  if (!site || !site.lat || !site.lng) return null;
+  return `https://www.google.com/maps?q=${site.lat},${site.lng}`;
 }
 
 // ── Render page ───────────────────────────────────────────────
@@ -174,11 +230,16 @@ function render() {
 
   const { park, info } = loadParkInfo();
   const siteType = getSiteType(b.siteId);
+  const site = getSite(b.siteId);
   const n = nights(b.checkIn, b.checkOut);
   const wifi = info.wifiName || 'Ask at reception';
   const pass = info.wifiPass || 'Ask at reception';
   const phone = info.phone || '';
   const checkinTime = info.checkinTime || '2:00pm';
+  const gateCode = info.gateCode || '';
+  const dirUrl = directionsUrl(site);
+  const amenities = getAmenities();
+  const upcomingEvents = getUpcomingEvents();
 
   // Button state
   let btnHtml = '';
@@ -271,8 +332,26 @@ function render() {
             <span class="info-label">Guests</span>
             <span class="info-val">${b.guests} adult${b.guests!==1?'s':''}${b.children>0?' + '+b.children+' child'+( b.children!==1?'ren':''):''}</span>
           </div>` : ''}
+          ${dirUrl ? `<div style="margin-top:10px;text-align:center">
+            <a href="${dirUrl}" target="_blank" rel="noopener" style="display:inline-block;font-size:12px;font-weight:700;color:#1B4332;text-decoration:none;border:1px solid #c8e6c9;border-radius:20px;padding:8px 16px">🧭 Get Directions to ${b.siteId}</a>
+          </div>` : ''}
         </div>
       </div>
+
+      <!-- Gate code -->
+      ${gateCode ? `<div class="card">
+        <div class="card-header">
+          <div class="card-icon">🚪</div>
+          <div class="card-title">Gate Access Code</div>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Code</span>
+            <span class="info-val large">${gateCode}</span>
+          </div>
+          <p style="font-size:11px;color:#74c69d;margin-top:8px">Use this code to enter the park if arriving after hours.</p>
+        </div>
+      </div>` : ''}
 
       <!-- WiFi -->
       <div class="card">
@@ -292,6 +371,35 @@ function render() {
         </div>
       </div>
 
+      <!-- Amenities -->
+      ${amenities.length ? `<div class="card">
+        <div class="card-header">
+          <div class="card-icon">🏊</div>
+          <div class="card-title">Park Amenities</div>
+        </div>
+        <div class="card-body">
+          ${amenities.map(a => {
+            const ft = FACILITY_TYPES[a.type] || { icon:'📍', label:a.type||'Facility' };
+            return `<div class="rule-item"><div class="rule-icon">${ft.icon}</div><div><strong style="color:#1a2e24">${a.name||ft.label}</strong>${a.location?` — ${a.location}`:''}</div></div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
+      <!-- Upcoming events -->
+      ${upcomingEvents.length ? `<div class="card">
+        <div class="card-header">
+          <div class="card-icon">📆</div>
+          <div class="card-title">What's On During Your Stay</div>
+        </div>
+        <div class="card-body">
+          ${upcomingEvents.map(e => {
+            const dateRange = e.endDate && e.endDate !== e.date ? `${fmtDate(e.date)} → ${fmtDate(e.endDate)}` : fmtDate(e.date);
+            const timeStr = e.allDay ? '' : [e.startTime, e.endTime].filter(Boolean).join(' – ');
+            return `<div class="rule-item"><div class="rule-icon">📌</div><div><strong style="color:#1a2e24">${e.title}</strong><div style="font-size:11px;color:#74c69d;margin-top:1px">${dateRange}${timeStr?` · ${timeStr}`:''}${e.location?` · 📍 ${e.location}`:''}</div></div></div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
       <!-- Park rules -->
       <div class="card">
         <div class="card-header">
@@ -299,11 +407,7 @@ function render() {
           <div class="card-title">Park Guidelines</div>
         </div>
         <div class="card-body">
-          <div class="rule-item"><div class="rule-icon">🔇</div><div>Quiet hours from 10:00pm to 7:00am. Please keep noise to a minimum out of respect for other guests.</div></div>
-          <div class="rule-item"><div class="rule-icon">🐕</div><div>Pets must be on a leash at all times and owners are responsible for cleaning up.</div></div>
-          <div class="rule-item"><div class="rule-icon">🚗</div><div>Speed limit 10km/h throughout the park. Children have priority.</div></div>
-          <div class="rule-item"><div class="rule-icon">🔥</div><div>Campfires in designated areas only. Always extinguish fully before sleeping.</div></div>
-          <div class="rule-item"><div class="rule-icon">♻️</div><div>Please use the recycling and waste facilities provided. Leave your site clean.</div></div>
+          ${getGuidelines(info).map(r => `<div class="rule-item"><div class="rule-icon">${r.icon}</div><div>${r.text}</div></div>`).join('')}
         </div>
       </div>
 
@@ -373,6 +477,9 @@ function showSuccess() {
   const wifi = info.wifiName || 'Ask at reception';
   const pass = info.wifiPass || 'Ask at reception';
   const phone = info.phone || '';
+  const gateCode = info.gateCode || '';
+  const site = getSite(b?.siteId || '');
+  const dirUrl = directionsUrl(site);
 
   app.innerHTML = `
     <div class="hero" style="padding-bottom:32px">
@@ -390,7 +497,21 @@ function showSuccess() {
           You're all checked in, ${b?.guest?.split(' ')[0] || 'Guest'}!<br>
           Head to <strong style="color:#fff">${b?.siteId || 'your site'}</strong> and make yourself at home.
         </div>
+        ${dirUrl ? `<a href="${dirUrl}" target="_blank" rel="noopener" style="display:inline-block;margin-top:14px;font-size:12px;font-weight:700;color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:8px 16px">🧭 Get Directions to ${b?.siteId||'your site'}</a>` : ''}
       </div>
+
+      ${gateCode ? `<div class="card">
+        <div class="card-header">
+          <div class="card-icon">🚪</div>
+          <div class="card-title">Gate Access Code</div>
+        </div>
+        <div class="card-body">
+          <div class="info-row">
+            <span class="info-label">Code</span>
+            <span class="info-val large">${gateCode}</span>
+          </div>
+        </div>
+      </div>` : ''}
 
       <div class="card">
         <div class="card-header">

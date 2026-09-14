@@ -1916,6 +1916,18 @@ app.post('/refund', async (req, res) => {
         </div>
       </div>
 
+      <!-- Self check-in page guidelines -->
+      <div style="border-top:1px solid var(--border-light);margin-top:12px;padding-top:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px">Self Check-In Page — Park Guidelines</div>
+        <div class="form-field">
+          <label>Guidelines shown to guests on the self check-in page (one per line)</label>
+          <textarea id="park-guidelines" rows="6" oninput="saveParkInfo()"
+            placeholder="🔇 Quiet hours from 10:00pm to 7:00am&#10;🐕 Pets must be on a leash at all times&#10;🚗 Speed limit 10km/h throughout the park&#10;🔥 Campfires in designated areas only&#10;♻️ Please use the recycling and waste facilities provided"
+            style="width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none;resize:vertical;font-family:inherit;line-height:1.6"></textarea>
+          <p style="font-size:10px;color:var(--text-dim);margin-top:3px">Start each line with an emoji if you'd like an icon shown. Leave blank to use the default rules.</p>
+        </div>
+      </div>
+
       <div id="park-info-status" style="font-size:12px;color:#52B788;margin-top:4px"></div>
     </div>
 
@@ -2838,6 +2850,17 @@ let PARKS = JSON.parse(localStorage.getItem('parks') || 'null') || [
   { id:'park1', name:'Billabong Breeze', location:'Mundaring, WA', lat:-31.86400359547606, lng:116.7707586548024, color:'#52B788' },
 ];
 let activeParkId = localStorage.getItem('activeParkId') || PARKS[0].id;
+// Persist immediately, even before any explicit save. Guest-facing pages
+// (checkin.html, arrive.html, book.html) are separate page loads that find
+// the right park purely by reading 'parks'/'activeParkId' from localStorage —
+// on a brand new setup that hadn't yet added/switched a park or triggered
+// saveParkStore() some other way, those keys were never written, so guest
+// pages would silently fall back to "Your Park" with empty WiFi/gate code/
+// guidelines even though the main app looked completely fine.
+if (!localStorage.getItem('parks') || !localStorage.getItem('activeParkId')) {
+  localStorage.setItem('parks', JSON.stringify(PARKS));
+  localStorage.setItem('activeParkId', activeParkId);
+}
 
 function getActivePark() { return PARKS.find(p=>p.id===activeParkId) || PARKS[0]; }
 function saveParkStore() { localStorage.setItem('parks', JSON.stringify(PARKS)); localStorage.setItem('activeParkId', activeParkId); }
@@ -7709,6 +7732,7 @@ function saveParkInfo() {
     gateCode:              document.getElementById('park-gate-code')?.value.trim()      || '',
     weatherLat:            document.getElementById('park-weather-lat')?.value.trim()    || '',
     weatherLon:            document.getElementById('park-weather-lon')?.value.trim()    || '',
+    guidelines:            document.getElementById('park-guidelines')?.value            || '',
   };
   localStorage.setItem('park_info_'+getActivePark().id, JSON.stringify(info));
   const el = document.getElementById('park-info-status');
@@ -7732,6 +7756,7 @@ function loadParkInfo() {
   set('park-gate-code',         info.gateCode || '');
   set('park-weather-lat',       info.weatherLat || '');
   set('park-weather-lon',       info.weatherLon || '');
+  set('park-guidelines',        info.guidelines || '');
   return info;
 }
 
