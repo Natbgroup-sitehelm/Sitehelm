@@ -346,6 +346,27 @@
   #backup-panel.show     { display:flex; flex:1; flex-direction:column; overflow-y:auto; padding:20px; }
   #movements-panel  { display:none; }
   #movements-panel.show  { display:flex; flex:1; flex-direction:row; overflow:hidden; }
+  #reports-panel    { display:none; }
+  #reports-panel.show    { display:flex; flex:1; flex-direction:column; overflow-y:auto; padding:20px; gap:16px; background:var(--bg-base); }
+  .rpt-seg-btn { font-family:inherit; font-size:12px; font-weight:600; color:var(--text-muted); background:transparent; border:none; border-radius:6px; padding:6px 12px; cursor:pointer; }
+  .rpt-seg-btn.active { background:var(--accent); color:#08170f; }
+  .rpt-kpi { background:var(--bg-panel,var(--bg-card)); border:1px solid var(--border); border-radius:12px; padding:14px 14px 12px; position:relative; overflow:hidden; }
+  .rpt-kpi .rpt-stripe { position:absolute; left:0; top:0; bottom:0; width:3px; }
+  .rpt-kpi .rpt-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-muted); margin-bottom:6px; }
+  .rpt-kpi .rpt-value { font-size:20px; font-weight:800; color:var(--text-primary); letter-spacing:-0.2px; }
+  .rpt-kpi .rpt-sub { font-size:10.5px; color:var(--text-dim,var(--text-muted)); margin-top:4px; }
+  .rpt-pm-row { display:grid; grid-template-columns:96px 1fr 74px; align-items:center; gap:10px; padding:7px 0; }
+  .rpt-pm-row .rpt-pm-name { font-size:12px; font-weight:600; color:var(--text-primary); display:flex; align-items:center; gap:6px; }
+  .rpt-swatch { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
+  .rpt-track { background:var(--bg-hover,var(--border-light)); border-radius:5px; height:8px; overflow:hidden; }
+  .rpt-fill { height:100%; border-radius:5px; }
+  .rpt-pm-row .rpt-pm-amt { font-size:12px; text-align:right; font-weight:700; color:var(--text-primary); }
+  .rpt-cat-row { display:grid; grid-template-columns:150px 1fr 70px; align-items:center; gap:10px; padding:6px 0; font-size:12px; }
+  .rpt-list-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-light); font-size:12.5px; }
+  .rpt-list-row:last-child { border-bottom:none; }
+  .rpt-list-row .rpt-who { font-weight:600; color:var(--text-primary); }
+  .rpt-list-row .rpt-meta { font-size:11px; color:var(--text-dim,var(--text-muted)); margin-top:2px; }
+  .rpt-empty { padding:16px 0; text-align:center; font-size:12px; color:var(--text-dim,var(--text-muted)); }
 
   .booking-row { background: var(--bg-panel); border: 1px solid var(--border-light); border-radius: 10px; padding: 12px 16px; margin-bottom: 8px; cursor: pointer; transition: border-color 0.15s; display: flex; justify-content: space-between; align-items: center; }
   .booking-row:hover { border-color: var(--accent); }
@@ -888,6 +909,7 @@
   <div class="tab" onclick="switchTab('staff')">👥 Staff</div>
   <div class="tab" onclick="switchTab('housekeeping')">🧹 Housekeeping</div>
   <div class="tab" onclick="switchTab('rates')">💰 Rates</div>
+  <div class="tab" onclick="switchTab('reports')">📈 Reports</div>
   <div class="tab" onclick="switchTab('events')" id="events-tab">📆 Events</div>
   <div class="tab" onclick="switchTab('maintenance')" id="maintenance-tab">🔧 Maintenance</div>
   <div class="tab" onclick="switchTab('settings')">⚙️ Settings</div>
@@ -1817,6 +1839,82 @@ app.post('/refund', async (req, res) => {
         </table>
       </div>
       <div id="mv-summary-bar" style="padding:8px 16px;background:#122819;border-top:1px solid #1e3d28;font-size:11px;color:#74c69d;display:flex;gap:20px;flex-wrap:wrap"></div>
+    </div>
+  </div>
+
+  <!-- REPORTS PANEL -->
+  <div id="reports-panel">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+      <div>
+        <div style="font-size:17px;font-weight:800;color:var(--text-primary)">📈 Financial Reports</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Cash, EFTPOS and category breakdowns for owners &amp; managers</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;background:var(--bg-panel,var(--bg-card));border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px" id="rpt-range-seg">
+          <button class="rpt-seg-btn" data-range="today" onclick="setRptRange('today')">Today</button>
+          <button class="rpt-seg-btn" data-range="week" onclick="setRptRange('week')">Week</button>
+          <button class="rpt-seg-btn" data-range="month" onclick="setRptRange('month')">Month</button>
+          <button class="rpt-seg-btn" data-range="all" onclick="setRptRange('all')">All time</button>
+        </div>
+        <button class="grid-nav-btn" onclick="exportPaymentsCSV(rptRangeStart(), rptRangeEnd())">⬇️ Export CSV</button>
+        <button class="grid-nav-btn" title="Coming soon — categories are now tagged and ready for this" onclick="notify('Xero export is coming soon — payments are now categorized and ready for it','#f9c74f')">📤 Export to Xero</button>
+      </div>
+    </div>
+
+    <div id="rpt-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px"></div>
+
+    <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:14px">
+      <div style="background:var(--bg-panel,var(--bg-card));border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border-light)">
+          <span style="font-size:13.5px;font-weight:700;color:var(--text-primary)">Payments by method</span>
+        </div>
+        <div id="rpt-methods" style="padding:16px 18px 18px"></div>
+      </div>
+      <div style="background:var(--bg-panel,var(--bg-card));border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border-light)">
+          <span style="font-size:13.5px;font-weight:700;color:var(--text-primary)">Revenue by category</span>
+        </div>
+        <div id="rpt-categories" style="padding:16px 18px 18px"></div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg-panel,var(--bg-card));border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:13.5px;font-weight:700;color:var(--text-primary)">Daily takings &amp; reconciliation</span>
+        <span style="font-size:11px;color:var(--text-dim,var(--text-muted))" id="rpt-ledger-hint"></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:600px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted)">Date</th>
+              <th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted)">Cash</th>
+              <th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted)">EFTPOS/Card</th>
+              <th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted)">Transfer</th>
+              <th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted)">Refunds</th>
+              <th style="text-align:right;padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;color:var(--text-muted)">Net</th>
+            </tr>
+          </thead>
+          <tbody id="rpt-ledger-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div style="background:var(--bg-panel,var(--bg-card));border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13.5px;font-weight:700;color:var(--text-primary)">Outstanding balances</span>
+          <span id="rpt-outstanding-hint" style="font-size:11px;color:var(--text-dim,var(--text-muted))"></span>
+        </div>
+        <div id="rpt-outstanding" style="padding:6px 18px 12px"></div>
+      </div>
+      <div style="background:var(--bg-panel,var(--bg-card));border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13.5px;font-weight:700;color:var(--text-primary)">Refunds &amp; adjustments</span>
+          <span id="rpt-refunds-hint" style="font-size:11px;color:var(--text-dim,var(--text-muted))"></span>
+        </div>
+        <div id="rpt-refunds" style="padding:6px 18px 12px"></div>
+      </div>
     </div>
   </div>
 
@@ -4915,7 +5013,7 @@ function renderDashMiniChart() {
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i)=>{ t.classList.toggle('active', ['map','dashboard','bookings','grid','movements','sms','staff','housekeeping','rates','events','maintenance','settings','backup','anpr'][i]===tab); });
+  document.querySelectorAll('.tab').forEach((t,i)=>{ t.classList.toggle('active', ['map','dashboard','bookings','grid','movements','sms','staff','housekeeping','rates','reports','events','maintenance','settings','backup','anpr'][i]===tab); });
   document.getElementById('map-panel').classList.toggle('hide', tab!=='map');
   document.getElementById('dashboard-panel').classList.toggle('show', tab==='dashboard');
   document.getElementById('bookings-panel').classList.toggle('show', tab==='bookings');
@@ -4927,6 +5025,7 @@ function switchTab(tab) {
   const spEl = document.getElementById('settings-panel'); if(spEl) spEl.classList.toggle('show', tab==='settings');
   const hkEl = document.getElementById('housekeeping-panel'); if(hkEl) hkEl.classList.toggle('show', tab==='housekeeping');
   const rtEl = document.getElementById('rates-panel'); if(rtEl) rtEl.classList.toggle('show', tab==='rates');
+  const rpEl = document.getElementById('reports-panel'); if(rpEl) rpEl.classList.toggle('show', tab==='reports');
   const evEl = document.getElementById('events-panel'); if(evEl) evEl.classList.toggle('show', tab==='events');
   const mnEl = document.getElementById('maintenance-panel'); if(mnEl) mnEl.classList.toggle('show', tab==='maintenance');
   if (tab==='maintenance') renderMaintenanceBoard();
@@ -4950,6 +5049,7 @@ function switchTab(tab) {
   if (tab==='settings') { renderSiteManager(); renderPricingDefaults(); initEmbedCode(); loadGhlSettings(); renderActiveBlocks(); initLoyaltySettings(); loadParkInfo(); const sp=document.getElementById('settings-panel'); if(sp) sp.scrollTop=0; }
   if (tab==='housekeeping') { renderHousekeeping(); }
   if (tab==='rates') { renderRates(); }
+  if (tab==='reports') { renderFinanceReport(); }
   if (tab==='events') { renderEvents(); }
   if (tab==='anpr') { renderAnprPlaceholder(); }
 }
@@ -5914,11 +6014,19 @@ async function processRefund(bookingId) {
 
   // Demo: record locally
   await new Promise(r => setTimeout(r, 1200));
+  const refundedAt = new Date().toISOString();
   b.refunded = true;
   b.refundAmount = amount;
+  b.refundReason = reason;
+  b.refundAt = refundedAt;
   b.paid = amount < (b.amountPaid || b.total) ? b.paid : false;
   closeModal();
   refreshAll();
+
+  const refundMethod = b.paymentMethod || 'card';
+  logActivity('refund_issued', { bookingId:b.id, guest:b.guest, siteId:b.siteId, amount, method:refundMethod, reason });
+  logPayment({ type:'refund', bookingId:b.id, guest:b.guest, siteId:b.siteId, amount:-Math.abs(amount), method:refundMethod, category:'refund', reference:reason||'', takenBy:'', timestamp:refundedAt });
+
   notify(`↩ Refund of A$${amount.toFixed(2)} issued to ${b.guest}`,'#f9c74f');
 }
 
@@ -12992,6 +13100,23 @@ function openTakePayment(bookingId) {
       </div>
 
       <div class="form-field">
+        <label>What's this for?</label>
+        <select id="pay-category"
+          style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none;font-family:inherit">
+          ${Object.entries(PAYMENT_CATEGORIES).map(([k,v]) => `<option value="${k}">${v.icon} ${v.label}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label>Taken by (optional)</label>
+        <select id="pay-taken-by"
+          style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none;font-family:inherit">
+          <option value="">Not specified</option>
+          ${staffMembers.filter(s=>s.active).map(s => `<option value="${s.name}">${s.name}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="form-field">
         <label>Receipt / reference note (optional)</label>
         <input type="text" id="pay-ref" placeholder="e.g. cash receipt #123, EFTPOS ref"
           style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:13px;outline:none;font-family:inherit">
@@ -13027,10 +13152,12 @@ function selectPayMethod(method) {
 }
 
 function confirmTakePayment(bookingId) {
-  const amount  = parseFloat(document.getElementById('pay-amount')?.value);
-  const ref     = document.getElementById('pay-ref')?.value.trim();
-  const errEl   = document.getElementById('pay-err');
-  const method  = window._payMethod || 'cash';
+  const amount   = parseFloat(document.getElementById('pay-amount')?.value);
+  const ref      = document.getElementById('pay-ref')?.value.trim();
+  const errEl    = document.getElementById('pay-err');
+  const method   = window._payMethod || 'cash';
+  const category = document.getElementById('pay-category')?.value || 'site_fee';
+  const takenBy  = document.getElementById('pay-taken-by')?.value || '';
 
   if (!amount || amount <= 0) {
     if (errEl) errEl.textContent = 'Enter a valid payment amount';
@@ -13045,6 +13172,12 @@ function confirmTakePayment(bookingId) {
   const balance = b.total || 0;
   const newPaid = (b.amountPaid || 0) + amount;
   const fullyPaid = newPaid >= balance;
+  const paidAt  = new Date().toISOString();
+
+  const paymentEntry = {
+    id: genId(), amount, method, category, reference: ref || '', takenBy, timestamp: paidAt,
+  };
+  const paymentHistory = [...(b.paymentHistory || []), paymentEntry];
 
   bookings[idx] = {
     ...bookings[idx],
@@ -13053,7 +13186,8 @@ function confirmTakePayment(bookingId) {
     balanceDue:  Math.max(0, balance - newPaid),
     paymentMethod: method,
     paymentRef:  ref || '',
-    paymentAt:   new Date().toISOString(),
+    paymentAt:   paidAt,
+    paymentHistory,
   };
 
   localStorage.setItem('bookings_cache', JSON.stringify(bookings));
@@ -13061,6 +13195,8 @@ function confirmTakePayment(bookingId) {
   refreshAll();
 
   logActivity('payment_received', { bookingId:b.id, guest:b.guest, siteId:b.siteId, amount, method, reference:ref||'', fullyPaid, balanceDue: Math.max(0, balance-newPaid) });
+  logPayment({ type:'payment', bookingId:b.id, guest:b.guest, siteId:b.siteId, amount, method, category, reference:ref||'', takenBy, timestamp:paidAt });
+
   if (fullyPaid) {
     notify(`✅ A$${amount.toFixed(2)} received via ${method} — ${b.guest} fully paid`);
   } else {
@@ -13179,8 +13315,232 @@ const AL_TYPE_MAP = {
   booking_cancelled:{ label:'Cancelled',         icon:'❌', color:'#ef4444', bg:'#3a0000' },
   booking_edited:   { label:'Booking Edited',    icon:'✏️', color:'#74c69d', bg:'#1B4332' },
   payment_received: { label:'Payment Received',  icon:'💳', color:'#4CAF50', bg:'#1a2e1a' },
+  refund_issued:    { label:'Refund Issued',     icon:'↩️', color:'#ef4444', bg:'#3a0000' },
   site_blocked:     { label:'Site Blocked',      icon:'🔧', color:'#f97316', bg:'#2a1000' },
 };
+
+// ── Financial / Payments Log ────────────────────────────────────────────────
+// A dedicated, high-capacity ledger of every payment and refund — separate
+// from the general Activity Log (which is capped tighter and mixes in
+// operational noise like bookings/check-ins). This is the source of truth
+// for owner/manager financial reporting and future accounting exports.
+const PAY_LOG_KEY = 'sitehelm_payments_log';
+const PAY_LOG_MAX = 20000; // years of headroom for a single park
+
+const PAYMENT_CATEGORIES = {
+  site_fee:    { label:'Site / Accommodation Fee', icon:'🏕️' },
+  bond:        { label:'Bond / Security Deposit',  icon:'🔒' },
+  extra_guest: { label:'Extra Guest Fee',          icon:'👥' },
+  addon:       { label:'Add-on / Camp Store',      icon:'🛒' },
+  other:       { label:'Other',                    icon:'📌' },
+};
+
+function loadPaymentsLog() {
+  try { return JSON.parse(localStorage.getItem(PAY_LOG_KEY) || '[]'); }
+  catch(e) { return []; }
+}
+
+function logPayment(details) {
+  try {
+    const log = loadPaymentsLog();
+    const entry = {
+      id: genId(),
+      parkId: getActivePark().id,
+      ...details,
+    };
+    log.unshift(entry); // newest first
+    if (log.length > PAY_LOG_MAX) log.length = PAY_LOG_MAX;
+    localStorage.setItem(PAY_LOG_KEY, JSON.stringify(log));
+  } catch(e) { console.warn('Payments log error:', e); }
+}
+
+function exportPaymentsCSV(fromDate, toDate) {
+  let log = loadPaymentsLog();
+  if (fromDate) log = log.filter(e => e.timestamp.split('T')[0] >= fromDate);
+  if (toDate)   log = log.filter(e => e.timestamp.split('T')[0] <= toDate);
+  if (!log.length) { notify('No payments in range to export', '#f9c74f'); return; }
+
+  const headers = ['Date','Time','Type','Guest','Site','Category','Method','Amount','Taken By','Reference','Booking ID'];
+  const rows = log.map(e => {
+    const d = new Date(e.timestamp);
+    const date = fmtDate(d.toISOString().split('T')[0]);
+    const time = d.toLocaleTimeString('en-AU', {hour:'2-digit', minute:'2-digit'});
+    const cat  = PAYMENT_CATEGORIES[e.category]?.label || e.category || '';
+    return [date, time, e.type||'payment', e.guest||'', e.siteId||'', cat, e.method||'', `A$${Number(e.amount).toFixed(2)}`, e.takenBy||'', e.reference||'', e.bookingId||'']
+      .map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `sitehelm-payments-${TODAY}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  notify(`✅ Exported ${log.length} payment records`);
+}
+
+// ── Financial Reports panel (owner/manager view) ────────────────────────────
+let rptRange = 'week';
+
+function rptRangeStart() {
+  const d = new Date(TODAY + 'T00:00:00');
+  if (rptRange === 'today') return TODAY;
+  if (rptRange === 'week')  { d.setDate(d.getDate() - 6); return d.toISOString().split('T')[0]; }
+  if (rptRange === 'month') { d.setDate(d.getDate() - 29); return d.toISOString().split('T')[0]; }
+  return null; // 'all'
+}
+function rptRangeEnd() {
+  return rptRange === 'all' ? null : TODAY;
+}
+
+function setRptRange(r) {
+  rptRange = r;
+  renderFinanceReport();
+}
+
+const PM_COLOR = { cash:'#f9c74f', card:'#64b5f6', transfer:'#b39ddb' };
+const PM_LABEL = { cash:'Cash', card:'EFTPOS / Card', transfer:'Bank Transfer' };
+
+function renderFinanceReport() {
+  const seg = document.getElementById('rpt-range-seg');
+  if (seg) seg.querySelectorAll('.rpt-seg-btn').forEach(b => b.classList.toggle('active', b.dataset.range === rptRange));
+
+  const start = rptRangeStart(), end = rptRangeEnd();
+  let log = loadPaymentsLog();
+  if (start) log = log.filter(e => e.timestamp.split('T')[0] >= start);
+  if (end)   log = log.filter(e => e.timestamp.split('T')[0] <= end);
+
+  const payments = log.filter(e => e.type !== 'refund');
+  const refunds  = log.filter(e => e.type === 'refund');
+
+  const grossRevenue = payments.reduce((s,e) => s + Number(e.amount||0), 0);
+  const refundTotal   = refunds.reduce((s,e) => s + Math.abs(Number(e.amount||0)), 0);
+  const netRevenue    = grossRevenue - refundTotal;
+
+  const byMethod = { cash:0, card:0, transfer:0 };
+  log.forEach(e => { if (byMethod[e.method] !== undefined) byMethod[e.method] += Number(e.amount||0); });
+
+  const byCategory = {};
+  payments.forEach(e => { byCategory[e.category] = (byCategory[e.category]||0) + Number(e.amount||0); });
+
+  const outstanding = bookings.filter(b => (b.balanceDue ?? (b.paid ? 0 : (b.total - (b.amountPaid||0)))) > 0.004);
+  const outstandingTotal = outstanding.reduce((s,b) => s + (b.balanceDue ?? (b.total - (b.amountPaid||0))), 0);
+
+  // ── KPI tiles ──
+  const kpiEl = document.getElementById('rpt-kpis');
+  if (kpiEl) {
+    const pct = (v) => grossRevenue > 0 ? `${((v/grossRevenue)*100).toFixed(1)}% of revenue` : '—';
+    kpiEl.innerHTML = `
+      <div class="rpt-kpi"><div class="rpt-stripe" style="background:var(--accent)"></div><div class="rpt-label">Net Revenue</div><div class="rpt-value">A$${netRevenue.toFixed(2)}</div><div class="rpt-sub">${payments.length} payment${payments.length!==1?'s':''}</div></div>
+      <div class="rpt-kpi"><div class="rpt-stripe" style="background:${PM_COLOR.cash}"></div><div class="rpt-label">Cash Taken</div><div class="rpt-value">A$${byMethod.cash.toFixed(2)}</div><div class="rpt-sub">${pct(byMethod.cash)}</div></div>
+      <div class="rpt-kpi"><div class="rpt-stripe" style="background:${PM_COLOR.card}"></div><div class="rpt-label">EFTPOS / Card</div><div class="rpt-value">A$${byMethod.card.toFixed(2)}</div><div class="rpt-sub">${pct(byMethod.card)}</div></div>
+      <div class="rpt-kpi"><div class="rpt-stripe" style="background:var(--text-dim,var(--text-muted))"></div><div class="rpt-label">Outstanding</div><div class="rpt-value">A$${outstandingTotal.toFixed(2)}</div><div class="rpt-sub">${outstanding.length} unpaid balance${outstanding.length!==1?'s':''}</div></div>
+      <div class="rpt-kpi"><div class="rpt-stripe" style="background:#ef4444"></div><div class="rpt-label">Refunds Issued</div><div class="rpt-value">A$${refundTotal.toFixed(2)}</div><div class="rpt-sub">${refunds.length} refund${refunds.length!==1?'s':''}</div></div>
+    `;
+  }
+
+  // ── Payments by method ──
+  const pmEl = document.getElementById('rpt-methods');
+  if (pmEl) {
+    const maxM = Math.max(1, ...Object.values(byMethod));
+    pmEl.innerHTML = Object.keys(byMethod).every(k => byMethod[k] === 0) ? `<div class="rpt-empty">No payments recorded in this range yet</div>` :
+      Object.entries(byMethod).map(([m,v]) => `
+        <div class="rpt-pm-row">
+          <div class="rpt-pm-name"><span class="rpt-swatch" style="background:${PM_COLOR[m]}"></span>${PM_LABEL[m]}</div>
+          <div class="rpt-track"><div class="rpt-fill" style="width:${Math.max(0,(v/maxM)*100)}%;background:${PM_COLOR[m]}"></div></div>
+          <div class="rpt-pm-amt">A$${v.toFixed(2)}</div>
+        </div>`).join('');
+  }
+
+  // ── Revenue by category ──
+  const catEl = document.getElementById('rpt-categories');
+  if (catEl) {
+    const catEntries = Object.entries(byCategory).sort((a,b) => b[1]-a[1]);
+    const maxC = Math.max(1, ...catEntries.map(e=>e[1]));
+    catEl.innerHTML = !catEntries.length ? `<div class="rpt-empty">No payments recorded in this range yet</div>` :
+      catEntries.map(([cat,v]) => `
+        <div class="rpt-cat-row">
+          <div style="color:var(--text-primary);font-weight:600">${PAYMENT_CATEGORIES[cat]?.icon||'📌'} ${PAYMENT_CATEGORIES[cat]?.label || cat}</div>
+          <div class="rpt-track"><div class="rpt-fill" style="width:${Math.max(0,(v/maxC)*100)}%;background:var(--accent)"></div></div>
+          <div style="text-align:right;font-weight:700;color:var(--text-primary)">A$${v.toFixed(2)}</div>
+        </div>`).join('');
+  }
+
+  // ── Daily ledger ──
+  const ledgerHint = document.getElementById('rpt-ledger-hint');
+  if (ledgerHint) ledgerHint.textContent = start ? `${fmtDate(start)} – ${fmtDate(end)}` : 'all recorded history';
+
+  const byDay = {};
+  log.forEach(e => {
+    const day = e.timestamp.split('T')[0];
+    if (!byDay[day]) byDay[day] = { cash:0, card:0, transfer:0, refund:0 };
+    if (e.type === 'refund') byDay[day].refund += Math.abs(Number(e.amount||0));
+    else if (byDay[day][e.method] !== undefined) byDay[day][e.method] += Number(e.amount||0);
+  });
+  const days = Object.keys(byDay).sort();
+  const ledgerBody = document.getElementById('rpt-ledger-body');
+  if (ledgerBody) {
+    if (!days.length) {
+      ledgerBody.innerHTML = `<tr><td colspan="6" class="rpt-empty">No takings recorded in this range yet</td></tr>`;
+    } else {
+      const rowsHtml = days.map(day => {
+        const r = byDay[day];
+        const net = r.cash + r.card + r.transfer - r.refund;
+        return `<tr style="border-bottom:1px solid var(--border-light)">
+          <td style="padding:9px 12px;color:var(--text-primary)">${fmtDate(day)}</td>
+          <td style="padding:9px 12px;text-align:right;font-weight:600;color:var(--text-primary)">A$${r.cash.toFixed(2)}</td>
+          <td style="padding:9px 12px;text-align:right;font-weight:600;color:var(--text-primary)">A$${r.card.toFixed(2)}</td>
+          <td style="padding:9px 12px;text-align:right;font-weight:600;color:var(--text-primary)">A$${r.transfer.toFixed(2)}</td>
+          <td style="padding:9px 12px;text-align:right;font-weight:600;color:#ef4444">${r.refund?'–A$'+r.refund.toFixed(2):'A$0.00'}</td>
+          <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--text-primary)">A$${net.toFixed(2)}</td>
+        </tr>`;
+      }).join('');
+      const totals = days.reduce((t,day) => {
+        const r = byDay[day];
+        t.cash+=r.cash; t.card+=r.card; t.transfer+=r.transfer; t.refund+=r.refund;
+        return t;
+      }, {cash:0,card:0,transfer:0,refund:0});
+      const totalNet = totals.cash + totals.card + totals.transfer - totals.refund;
+      ledgerBody.innerHTML = rowsHtml + `<tr style="background:color-mix(in srgb, var(--accent) 8%, transparent);border-top:1px solid var(--border)">
+        <td style="padding:9px 12px;font-weight:700;color:var(--text-primary)">Total</td>
+        <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--text-primary)">A$${totals.cash.toFixed(2)}</td>
+        <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--text-primary)">A$${totals.card.toFixed(2)}</td>
+        <td style="padding:9px 12px;text-align:right;font-weight:700;color:var(--text-primary)">A$${totals.transfer.toFixed(2)}</td>
+        <td style="padding:9px 12px;text-align:right;font-weight:700;color:#ef4444">${totals.refund?'–A$'+totals.refund.toFixed(2):'A$0.00'}</td>
+        <td style="padding:9px 12px;text-align:right;font-weight:800;color:var(--text-primary)">A$${totalNet.toFixed(2)}</td>
+      </tr>`;
+    }
+  }
+
+  // ── Outstanding balances ──
+  const outEl = document.getElementById('rpt-outstanding');
+  const outHint = document.getElementById('rpt-outstanding-hint');
+  if (outHint) outHint.textContent = outstanding.length ? `A$${outstandingTotal.toFixed(2)} total owing` : '';
+  if (outEl) {
+    outEl.innerHTML = !outstanding.length ? `<div class="rpt-empty">No outstanding balances 🎉</div>` :
+      outstanding.slice(0, 12).map(b => {
+        const owed = b.balanceDue ?? (b.total - (b.amountPaid||0));
+        return `<div class="rpt-list-row">
+          <div><div class="rpt-who">${b.guest} — Site ${b.siteId}</div><div class="rpt-meta">${fmtDate(b.checkIn)} → ${fmtDate(b.checkOut)}</div></div>
+          <div style="font-weight:700;color:#f9c74f">A$${owed.toFixed(2)} owing</div>
+        </div>`;
+      }).join('');
+  }
+
+  // ── Refunds & adjustments ──
+  const refEl = document.getElementById('rpt-refunds');
+  const refHint = document.getElementById('rpt-refunds-hint');
+  if (refHint) refHint.textContent = refunds.length ? `${refunds.length} this period` : '';
+  if (refEl) {
+    refEl.innerHTML = !refunds.length ? `<div class="rpt-empty">No refunds in this range</div>` :
+      refunds.slice(0, 12).map(r => `
+        <div class="rpt-list-row">
+          <div><div class="rpt-who">${r.guest||'Guest'} — Site ${r.siteId||'—'}</div><div class="rpt-meta">${fmtDate(r.timestamp.split('T')[0])} · ${r.reference||'no reason given'}</div></div>
+          <div style="font-weight:700;color:#ef4444">–A$${Math.abs(Number(r.amount)).toFixed(2)}</div>
+        </div>`).join('');
+  }
+}
 
 let alFilterType = '';
 let alSearch     = '';
@@ -13206,6 +13566,7 @@ function renderActivityLog() {
       oninput="alSearch=this.value;renderActivityLog()"
       style="padding:5px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--input-bg);color:var(--text-primary);outline:none;width:180px">
     <button onclick="exportActivityLog()" class="grid-nav-btn">⬇️ Export CSV</button>
+    <button onclick="exportPaymentsCSV()" class="grid-nav-btn" title="Every payment and refund, tagged by category and method">💰 Export Payments CSV</button>
     <button onclick="clearActivityLog()" class="grid-nav-btn" style="color:#ef4444;border-color:#ef4444">🗑 Clear</button>
   `;
 
