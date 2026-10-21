@@ -373,6 +373,50 @@
   .settings-card { background: var(--settings-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
   .settings-card h3 { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.4px; display:flex; align-items:center; gap:8px; }
   .sms-preview { background: #0f1f15; border-radius: 12px; padding: 14px 16px; border-left: 4px solid #52B788; font-size: 13px; color: #e8f0e9; line-height: 1.6; white-space: pre-wrap; font-family: monospace; }
+
+  /* ── Command Palette ── */
+  #cmd-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(3px); z-index:9900; display:none; align-items:flex-start; justify-content:center; padding-top:clamp(60px,12vh,120px); }
+  #cmd-overlay.open { display:flex; }
+  #cmd-palette { width:100%; max-width:560px; background:#122819; border:1px solid #2D6A4F; border-radius:12px; box-shadow:0 25px 60px rgba(0,0,0,0.7); overflow:hidden; animation:cmdSlideIn 0.15s ease; }
+  @keyframes cmdSlideIn { from { opacity:0; transform:translateY(-10px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+  #cmd-input-row { display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid #1e3d28; }
+  #cmd-input { flex:1; background:none; border:none; outline:none; font-size:15px; color:var(--text-primary); font-family:'Segoe UI',system-ui,sans-serif; caret-color:#52B788; }
+  #cmd-input::placeholder { color:#557a63; }
+  #cmd-results { max-height:360px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#2D6A4F transparent; }
+  .cmd-group-label { font-size:10px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#557a63; padding:8px 16px 4px; }
+  .cmd-item { display:flex; align-items:center; gap:12px; padding:9px 16px; cursor:pointer; border-left:2px solid transparent; transition:background 0.08s; }
+  .cmd-item:hover { background:#1e3d28; }
+  .cmd-item.cmd-active { background:#1B4332; border-left-color:#52B788; }
+  .cmd-item-icon { width:30px; height:30px; background:#0f1f15; border:1px solid #2D6A4F; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .cmd-item.cmd-active .cmd-item-icon { border-color:#52B788; background:#1B4332; }
+  .cmd-item-text { flex:1; min-width:0; }
+  .cmd-item-name { font-size:13px; font-weight:600; color:var(--text-primary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cmd-item-name mark { background:none; color:#52B788; font-weight:700; }
+  .cmd-item-path { font-size:11px; color:#557a63; margin-top:1px; }
+  .cmd-tag { font-size:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; padding:2px 7px; border-radius:4px; background:#1B4332; color:#52B788; flex-shrink:0; }
+  #cmd-footer { display:flex; align-items:center; gap:14px; padding:8px 14px; border-top:1px solid #1e3d28; background:#0f1f15; }
+  .cmd-hint { display:flex; align-items:center; gap:4px; font-size:11px; color:#557a63; }
+  .cmd-hint kbd { display:inline-flex; align-items:center; padding:1px 5px; background:#0f1f15; border:1px solid #2D6A4F; border-bottom-width:2px; border-radius:4px; font-family:monospace; font-size:10px; color:#74c69d; }
+  #cmd-search-icon { color:#557a63; flex-shrink:0; }
+
+  /* ── Settings Accordion ── */
+  .settings-accordion { border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:10px; background:var(--settings-bg); }
+  .settings-accordion-hdr { display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; user-select:none; transition:background 0.1s; }
+  .settings-accordion-hdr:hover { background:var(--bg-hover); }
+  .settings-accordion.acc-open .settings-accordion-hdr { border-bottom:1px solid var(--border-light); }
+  .acc-icon { width:34px; height:34px; background:var(--bg-card); border:1px solid var(--border-light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .settings-accordion.acc-open .acc-icon { border-color:var(--accent); background:var(--bg-active); }
+  .acc-hdr-text { flex:1; min-width:0; }
+  .acc-title { font-size:13px; font-weight:700; color:var(--text-primary); }
+  .acc-subtitle { font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .acc-badge { font-size:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; padding:2px 8px; border-radius:4px; flex-shrink:0; }
+  .acc-badge-ok { background:var(--chip-green-bg); color:var(--chip-green-fg); }
+  .acc-badge-warn { background:#3d2600; color:#fbbf24; }
+  .acc-chevron { width:16px; height:16px; color:var(--text-dim); transition:transform 0.2s; flex-shrink:0; }
+  .settings-accordion.acc-open .acc-chevron { transform:rotate(180deg); color:var(--accent); }
+  .settings-accordion-body { display:none; padding:0; }
+  .settings-accordion.acc-open .settings-accordion-body { display:block; }
+  .settings-accordion-body .settings-card { border:none; border-radius:0; margin-bottom:0; }
   .sms-queue-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #1e3d28; }
   .sms-queue-item:last-child { border-bottom: none; }
   .sms-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -15413,6 +15457,277 @@ function openGateNoticeboardPrint() {
   win.document.close();
 }
 
+</script>
+
+<!-- ═══════════════════════════════════════════════
+     COMMAND PALETTE  (⌘K / Ctrl+K)
+═══════════════════════════════════════════════ -->
+<div id="cmd-overlay" onclick="cmdHandleOverlay(event)">
+  <div id="cmd-palette">
+    <div id="cmd-input-row">
+      <svg id="cmd-search-icon" width="18" height="18" viewBox="0 0 20 20" fill="none">
+        <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.6"/>
+        <path d="m14 14 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <input id="cmd-input" placeholder="Search pages, actions, settings…" autocomplete="off"
+        oninput="cmdFilter()" onkeydown="cmdKey(event)">
+      <kbd onclick="cmdClose()" style="cursor:pointer;display:inline-flex;align-items:center;padding:1px 6px;background:#0f1f15;border:1px solid #2D6A4F;border-bottom-width:2px;border-radius:4px;font-family:monospace;font-size:11px;color:#74c69d">esc</kbd>
+    </div>
+    <div id="cmd-results"></div>
+    <div id="cmd-footer">
+      <span class="cmd-hint"><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+      <span class="cmd-hint"><kbd>↵</kbd> open</span>
+      <span class="cmd-hint"><kbd>esc</kbd> close</span>
+      <span style="margin-left:auto;font-size:11px;color:#557a63">SiteHelm</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Command Palette ──────────────────────────────────────────────────────────
+const CMD_ITEMS = [
+  // Pages / Tabs
+  { g:'Pages', icon:'📊', name:'Dashboard',           path:'Overview & today\'s summary',       tag:null,      action:()=>switchTab('dashboard') },
+  { g:'Pages', icon:'📅', name:'Bookings',            path:'Reservations list',                 tag:null,      action:()=>switchTab('bookings') },
+  { g:'Pages', icon:'🗺️', name:'Site Map',            path:'Visual park layout grid',           tag:null,      action:()=>switchTab('grid') },
+  { g:'Pages', icon:'🔄', name:'Movements',           path:'Arrivals & departures register',    tag:null,      action:()=>switchTab('movements') },
+  { g:'Pages', icon:'🧹', name:'Housekeeping Board',  path:'Cleaning status for every site',    tag:null,      action:()=>switchTab('housekeeping') },
+  { g:'Pages', icon:'🔧', name:'Maintenance Board',   path:'Open jobs & issue tracking',        tag:null,      action:()=>switchTab('maintenance') },
+  { g:'Pages', icon:'💬', name:'SMS & Communications',path:'Messages & templates',              tag:null,      action:()=>switchTab('sms') },
+  { g:'Pages', icon:'👥', name:'Staff',               path:'Team clock-on & management',        tag:null,      action:()=>switchTab('staff') },
+  { g:'Pages', icon:'📈', name:'Financial Reports',   path:'Revenue & occupancy reports',       tag:null,      action:()=>switchTab('backup') },
+  { g:'Pages', icon:'💲', name:'Rates & Pricing',     path:'Site type rates & seasons',         tag:null,      action:()=>switchTab('rates') },
+  // Settings sections
+  { g:'Settings', icon:'⚙️', name:'Settings',          path:'All park settings',                tag:'Settings', action:()=>switchTab('settings') },
+  { g:'Settings', icon:'🌿', name:'Park Information',  path:'Settings → WiFi, phone, check-in', tag:'Settings', action:()=>{ switchTab('settings'); setTimeout(()=>cmdOpenAccordion('acc-park'),100); } },
+  { g:'Settings', icon:'🤖', name:'AI Assistant Setup',path:'Settings → ARIA / API key',        tag:'Settings', action:()=>{ switchTab('settings'); setTimeout(()=>cmdOpenAccordion('acc-ai'),100); } },
+  { g:'Settings', icon:'🧹', name:'Housekeeping Setup',path:'Settings → Zones & auto-assign',   tag:'Settings', action:()=>switchTab('housekeeping') },
+  { g:'Settings', icon:'💰', name:'Rate Configuration',path:'Settings → Pricing per site type', tag:'Settings', action:()=>switchTab('rates') },
+  { g:'Settings', icon:'🌿', name:'Loyalty Program',  path:'Settings → Park Rewards points',   tag:'Settings', action:()=>{ switchTab('settings'); setTimeout(()=>cmdOpenAccordion('acc-loyalty'),100); } },
+  { g:'Settings', icon:'📋', name:'Email Templates',   path:'Settings → Pre-arrival & review',  tag:'Settings', action:()=>switchTab('sms') },
+  // Quick Actions
+  { g:'Actions', icon:'➕', name:'New Booking',        path:'Create a new reservation',          tag:'Action',  action:()=>{ switchTab('bookings'); setTimeout(()=>openNewBooking(),200); } },
+  { g:'Actions', icon:'🛎️', name:'Check In Guest',    path:'Process a guest arrival',           tag:'Action',  action:()=>switchTab('movements') },
+  { g:'Actions', icon:'🔨', name:'Log Maintenance Job',path:'Report an issue or job',           tag:'Action',  action:()=>{ switchTab('maintenance'); setTimeout(()=>openNewMaintenanceJob(),300); } },
+  { g:'Actions', icon:'🧺', name:'Mark All Sites Clean',path:'Housekeeping → reset all clean', tag:'Action',  action:()=>{ switchTab('housekeeping'); setTimeout(()=>{ if(typeof markAllClean==='function') markAllClean(); },300); } },
+  { g:'Actions', icon:'☀️', name:'Morning Briefing',  path:'Generate today\'s AI briefing',     tag:'Action',  action:()=>{ if(typeof generateMorningBriefing==='function') generateMorningBriefing(true); if(typeof toggleAIAssistant==='function') toggleAIAssistant(); } },
+  { g:'Actions', icon:'💾', name:'Backup Data',       path:'Export park data backup',           tag:'Action',  action:()=>switchTab('backup') },
+];
+
+let _cmdFiltered = [];
+let _cmdActive = 0;
+
+function cmdHighlight(text, q) {
+  if (!q) return text;
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return text;
+  return text.slice(0,i) + '<mark>' + text.slice(i, i+q.length) + '</mark>' + text.slice(i+q.length);
+}
+
+function cmdRender(q) {
+  const el = document.getElementById('cmd-results');
+  const ql = (q||'').toLowerCase().trim();
+  if (!ql) {
+    _cmdFiltered = CMD_ITEMS.filter(i => i.g === 'Actions').slice(0,4)
+      .concat(CMD_ITEMS.filter(i => i.g === 'Pages').slice(0,4));
+  } else {
+    _cmdFiltered = CMD_ITEMS.filter(i =>
+      i.name.toLowerCase().includes(ql) ||
+      i.path.toLowerCase().includes(ql) ||
+      i.g.toLowerCase().includes(ql)
+    );
+  }
+  if (!_cmdFiltered.length) {
+    el.innerHTML = '<div style="padding:28px 16px;text-align:center;color:#557a63;font-size:13px">No results for "'+q+'"</div>';
+    return;
+  }
+  const groups = [...new Set(_cmdFiltered.map(i=>i.g))];
+  let html = '';
+  for (const grp of groups) {
+    const items = _cmdFiltered.filter(i=>i.g===grp);
+    if (!items.length) continue;
+    html += '<div class="cmd-group-label">'+grp+'</div>';
+    for (let idx=0; idx<_cmdFiltered.length; idx++) {
+      const item = _cmdFiltered[idx];
+      if (item.g !== grp) continue;
+      html += `<div class="cmd-item${idx===_cmdActive?' cmd-active':''}" data-idx="${idx}" onclick="cmdSelect(${idx})" onmouseover="cmdSetActive(${idx})">
+        <div class="cmd-item-icon">${item.icon}</div>
+        <div class="cmd-item-text">
+          <div class="cmd-item-name">${cmdHighlight(item.name,q)}</div>
+          <div class="cmd-item-path">${item.path}</div>
+        </div>
+        ${item.tag?`<span class="cmd-tag">${item.tag}</span>`:''}
+      </div>`;
+    }
+  }
+  el.innerHTML = html;
+}
+
+function cmdSetActive(idx) { _cmdActive=idx; cmdHighlightActive(); }
+function cmdHighlightActive() {
+  document.querySelectorAll('.cmd-item').forEach(el=>{
+    el.classList.toggle('cmd-active', parseInt(el.dataset.idx)===_cmdActive);
+  });
+}
+function cmdScrollActive() {
+  const el = document.querySelector('.cmd-item.cmd-active');
+  if (el) el.scrollIntoView({block:'nearest'});
+}
+
+function cmdSelect(idx) {
+  const item = _cmdFiltered[idx];
+  if (!item) return;
+  cmdClose();
+  setTimeout(()=>{ try{ item.action(); }catch(e){} }, 80);
+}
+
+function cmdFilter() {
+  const q = document.getElementById('cmd-input').value;
+  _cmdActive = 0;
+  cmdRender(q);
+}
+
+function cmdKey(e) {
+  if (e.key==='ArrowDown') { e.preventDefault(); _cmdActive=Math.min(_cmdActive+1,_cmdFiltered.length-1); cmdHighlightActive(); cmdScrollActive(); }
+  else if (e.key==='ArrowUp') { e.preventDefault(); _cmdActive=Math.max(_cmdActive-1,0); cmdHighlightActive(); cmdScrollActive(); }
+  else if (e.key==='Enter') { cmdSelect(_cmdActive); }
+  else if (e.key==='Escape') { cmdClose(); }
+}
+
+function cmdOpen() {
+  const ov = document.getElementById('cmd-overlay');
+  ov.classList.add('open');
+  const inp = document.getElementById('cmd-input');
+  inp.value = '';
+  _cmdActive = 0;
+  cmdRender('');
+  setTimeout(()=>inp.focus(), 50);
+}
+
+function cmdClose() {
+  document.getElementById('cmd-overlay').classList.remove('open');
+}
+
+function cmdHandleOverlay(e) {
+  if (e.target===document.getElementById('cmd-overlay')) cmdClose();
+}
+
+function cmdOpenAccordion(id) {
+  const el = document.getElementById(id);
+  if (el && !el.classList.contains('acc-open')) {
+    el.querySelector('.settings-accordion-hdr')?.click();
+  }
+  el?.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey||e.ctrlKey) && e.key==='k') {
+    e.preventDefault();
+    const ov = document.getElementById('cmd-overlay');
+    if (ov.classList.contains('open')) cmdClose(); else cmdOpen();
+  }
+});
+
+// ── Settings Accordion ───────────────────────────────────────────────────────
+function initSettingsAccordion() {
+  const panel = document.getElementById('settings-panel');
+  if (!panel || panel.dataset.accordionInit) return;
+  panel.dataset.accordionInit = '1';
+
+  const SECTIONS = [
+    { id:'acc-park',    icon:'🌿', title:'Park Information',     subtitle:'WiFi, phone, gate code, check-in time', badge:'Configured', badgeCls:'acc-badge-ok',
+      match: c => c.querySelector('input#park-wifi-name') },
+    { id:'acc-ai',      icon:'🤖', title:'AI Assistant (ARIA)',   subtitle:'Anthropic API key & morning briefing',   badge:'Setup required', badgeCls:'acc-badge-warn',
+      match: c => c.querySelector('input#ai-api-key-input') },
+    { id:'acc-loyalty', icon:'🌿', title:'Loyalty / Rewards',     subtitle:'Park Rewards points program',            badge:null, badgeCls:'',
+      match: c => c.id==='loyalty-settings-card' },
+    { id:'acc-sms',     icon:'💬', title:'SMS & Email Templates', subtitle:'Pre-arrival, check-in & review messages', badge:null, badgeCls:'',
+      match: c => c.querySelector('.sms-preview,textarea[id*="sms"],textarea[id*="email"],textarea[id*="tpl"]') },
+    { id:'acc-stripe',  icon:'💳', title:'Payments (Stripe)',      subtitle:'Online payment configuration',            badge:null, badgeCls:'',
+      match: c => c.querySelector('input[id*="stripe"]') },
+    { id:'acc-other',   icon:'⚙️', title:'Other Settings',         subtitle:'Remaining park configuration',            badge:null, badgeCls:'',
+      match: () => true }, // catch-all
+  ];
+
+  const cards = Array.from(panel.querySelectorAll(':scope > .settings-card'));
+  if (!cards.length) return;
+
+  // Group cards into sections
+  const buckets = SECTIONS.map(s => ({ ...s, cards: [] }));
+  for (const card of cards) {
+    let placed = false;
+    for (const bucket of buckets.slice(0,-1)) {
+      if (bucket.match(card)) { bucket.cards.push(card); placed=true; break; }
+    }
+    if (!placed) buckets[buckets.length-1].cards.push(card);
+  }
+
+  // Build accordion HTML around each non-empty bucket
+  for (const bucket of buckets) {
+    if (!bucket.cards.length) continue;
+    const wrap = document.createElement('div');
+    wrap.className = 'settings-accordion';
+    wrap.id = bucket.id;
+
+    // Header
+    const hdr = document.createElement('div');
+    hdr.className = 'settings-accordion-hdr';
+    hdr.innerHTML = `
+      <div class="acc-icon">${bucket.icon}</div>
+      <div class="acc-hdr-text">
+        <div class="acc-title">${bucket.title}</div>
+        <div class="acc-subtitle">${bucket.subtitle}</div>
+      </div>
+      ${bucket.badge ? `<span class="acc-badge ${bucket.badgeCls}">${bucket.badge}</span>` : ''}
+      <svg class="acc-chevron" viewBox="0 0 16 16" fill="none"><path d="m4 6 4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    `;
+    hdr.addEventListener('click', () => {
+      const isOpen = wrap.classList.contains('acc-open');
+      panel.querySelectorAll('.settings-accordion').forEach(a => a.classList.remove('acc-open'));
+      if (!isOpen) wrap.classList.add('acc-open');
+    });
+
+    // Body
+    const body = document.createElement('div');
+    body.className = 'settings-accordion-body';
+    for (const card of bucket.cards) {
+      panel.removeChild(card);
+      card.style.marginBottom = '0';
+      body.appendChild(card);
+    }
+
+    wrap.appendChild(hdr);
+    wrap.appendChild(body);
+    panel.appendChild(wrap);
+  }
+
+  // Open first accordion by default
+  panel.querySelector('.settings-accordion')?.classList.add('acc-open');
+}
+
+// Hook into switchTab to init accordion when settings opens
+const _origSwitchTab = typeof switchTab === 'function' ? switchTab : null;
+// We'll patch after page load via the DOMContentLoaded/load event
+window.addEventListener('load', () => {
+  // Patch switchTab to init accordion on first open
+  const origFn = window.switchTab;
+  if (origFn) {
+    window.switchTab = function(tab) {
+      origFn(tab);
+      if (tab === 'settings') setTimeout(initSettingsAccordion, 50);
+    };
+  }
+  // Also add ⌘K button to header
+  const headerActions = document.getElementById('header-actions');
+  if (headerActions) {
+    const cmdBtn = document.createElement('button');
+    cmdBtn.title = 'Command palette (Ctrl+K)';
+    cmdBtn.style.cssText = 'background:rgba(255,255,255,0.1);border:1px solid rgba(82,183,136,0.4);color:#fff;padding:5px 11px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;';
+    cmdBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.4"/><path d="m11 11 3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span style="font-size:10px;opacity:0.8">⌘K</span>';
+    cmdBtn.onclick = cmdOpen;
+    headerActions.insertBefore(cmdBtn, headerActions.firstChild);
+  }
+});
 </script>
 </body>
 </html>
