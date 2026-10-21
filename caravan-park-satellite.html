@@ -400,10 +400,10 @@
   #cmd-search-icon { color:#557a63; flex-shrink:0; }
 
   /* ── Settings Accordion ── */
-  .settings-accordion { border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:10px; background:var(--settings-bg); }
-  .settings-accordion-hdr { display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; user-select:none; transition:background 0.1s; }
+  .settings-accordion { border:1px solid var(--border); border-radius:12px; overflow:visible; margin-bottom:10px; background:var(--settings-bg); }
+  .settings-accordion-hdr { display:flex; align-items:center; gap:12px; padding:14px 16px; cursor:pointer; user-select:none; transition:background 0.1s; border-radius:12px; }
   .settings-accordion-hdr:hover { background:var(--bg-hover); }
-  .settings-accordion.acc-open .settings-accordion-hdr { border-bottom:1px solid var(--border-light); }
+  .settings-accordion.acc-open .settings-accordion-hdr { border-bottom:1px solid var(--border-light); border-radius:12px 12px 0 0; }
   .acc-icon { width:34px; height:34px; background:var(--bg-card); border:1px solid var(--border-light); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
   .settings-accordion.acc-open .acc-icon { border-color:var(--accent); background:var(--bg-active); }
   .acc-hdr-text { flex:1; min-width:0; }
@@ -414,7 +414,7 @@
   .acc-badge-warn { background:#3d2600; color:#fbbf24; }
   .acc-chevron { width:16px; height:16px; color:var(--text-dim); transition:transform 0.2s; flex-shrink:0; }
   .settings-accordion.acc-open .acc-chevron { transform:rotate(180deg); color:var(--accent); }
-  .settings-accordion-body { display:none; padding:0; }
+  .settings-accordion-body { display:none; padding:0; border-radius:0 0 12px 12px; overflow:hidden; }
   .settings-accordion.acc-open .settings-accordion-body { display:block; }
   .settings-accordion-body .settings-card { border:none; border-radius:0; margin-bottom:0; }
   .sms-queue-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid #1e3d28; }
@@ -4674,7 +4674,7 @@ function switchTab(tab) {
   if (tab==='grid') { renderGrid(); }
   if (tab==='backup') { renderBackupPanel(); }
   if (tab==='movements') { initMovements(); }
-  if (tab==='settings') { renderSiteManager(); renderPricingDefaults(); initEmbedCode(); loadGhlSettings(); renderActiveBlocks(); initLoyaltySettings(); loadParkInfo(); const sp=document.getElementById('settings-panel'); if(sp) sp.scrollTop=0; setTimeout(initSettingsAccordion, 80); }
+  if (tab==='settings') { renderSiteManager(); renderPricingDefaults(); initEmbedCode(); loadGhlSettings(); renderActiveBlocks(); initLoyaltySettings(); loadParkInfo(); const sp=document.getElementById('settings-panel'); if(sp) sp.scrollTop=0; setTimeout(initSettingsAccordion, 200); }
   if (tab==='housekeeping') { renderHousekeeping(); }
   if (tab==='rates') { renderRates(); }
   if (tab==='anpr') { renderAnprPlaceholder(); }
@@ -15631,8 +15631,9 @@ document.addEventListener('keydown', e => {
 // ── Settings Accordion ───────────────────────────────────────────────────────
 function initSettingsAccordion() {
   const panel = document.getElementById('settings-panel');
-  if (!panel || panel.dataset.accordionInit) return;
-  panel.dataset.accordionInit = '1';
+  if (!panel) return;
+  // If accordion wrappers already built, nothing to do
+  if (panel.querySelector('.settings-accordion')) return;
 
   const SECTIONS = [
     { id:'acc-park',    icon:'🌿', title:'Park Information',     subtitle:'WiFi, phone, gate code, check-in time', badge:'Configured', badgeCls:'acc-badge-ok',
