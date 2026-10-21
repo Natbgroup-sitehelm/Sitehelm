@@ -4674,7 +4674,7 @@ function switchTab(tab) {
   if (tab==='grid') { renderGrid(); }
   if (tab==='backup') { renderBackupPanel(); }
   if (tab==='movements') { initMovements(); }
-  if (tab==='settings') { renderSiteManager(); renderPricingDefaults(); initEmbedCode(); loadGhlSettings(); renderActiveBlocks(); initLoyaltySettings(); loadParkInfo(); const sp=document.getElementById('settings-panel'); if(sp) sp.scrollTop=0; }
+  if (tab==='settings') { renderSiteManager(); renderPricingDefaults(); initEmbedCode(); loadGhlSettings(); renderActiveBlocks(); initLoyaltySettings(); loadParkInfo(); const sp=document.getElementById('settings-panel'); if(sp) sp.scrollTop=0; setTimeout(initSettingsAccordion, 80); }
   if (tab==='housekeeping') { renderHousekeeping(); }
   if (tab==='rates') { renderRates(); }
   if (tab==='anpr') { renderAnprPlaceholder(); }
@@ -15705,19 +15705,8 @@ function initSettingsAccordion() {
   panel.querySelector('.settings-accordion')?.classList.add('acc-open');
 }
 
-// Hook into switchTab to init accordion when settings opens
-const _origSwitchTab = typeof switchTab === 'function' ? switchTab : null;
-// We'll patch after page load via the DOMContentLoaded/load event
+// Add ⌘K button to header on load
 window.addEventListener('load', () => {
-  // Patch switchTab to init accordion on first open
-  const origFn = window.switchTab;
-  if (origFn) {
-    window.switchTab = function(tab) {
-      origFn(tab);
-      if (tab === 'settings') setTimeout(initSettingsAccordion, 50);
-    };
-  }
-  // Also add ⌘K button to header
   const headerActions = document.getElementById('header-actions');
   if (headerActions) {
     const cmdBtn = document.createElement('button');
