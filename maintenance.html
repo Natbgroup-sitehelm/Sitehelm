@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Maintenance</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body { font-family:'Segoe UI',system-ui,sans-serif; background:#0f1520; min-height:100vh; color:#fff; }
+
+/* ── Header ── */
+#header { background:linear-gradient(135deg,#1a2a40,#2a4a7a); padding:14px 18px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
+#header h1 { font-size:18px; font-weight:800; }
+#header .sub { font-size:12px; color:#7ab3f0; margin-top:2px; }
+
+/* ── Flash ── */
+#flash { position:fixed; top:16px; left:50%; transform:translateX(-50%); background:#3b82f6; color:#fff; padding:12px 24px; border-radius:10px; font-weight:700; font-size:14px; z-index:9999; display:none; box-shadow:0 4px 20px rgba(0,0,0,0.5); white-space:nowrap; }
+
+/* ── Filter bar ── */
+#filter-bar { display:flex; gap:8px; padding:12px 16px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; border-bottom:1px solid #1e2d40; background:#0f1520; position:sticky; top:60px; z-index:90; }
+#filter-bar::-webkit-scrollbar { display:none; }
+.filter-chip { padding:7px 14px; border-radius:20px; border:1px solid #2a3d55; background:transparent; color:#7ab3f0; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; transition:all 0.15s; }
+.filter-chip.active { background:#2563eb; border-color:#2563eb; color:#fff; }
+.filter-chip:active { transform:scale(0.94); }
+
+/* ── Job list ── */
+#job-list { padding:12px 14px 100px; }
+.job-card { background:#131d2e; border:1px solid #1e2d40; border-radius:14px; margin-bottom:10px; cursor:pointer; overflow:hidden; display:flex; transition:opacity 0.15s; }
+.job-card:active { opacity:0.75; }
+.job-stripe { width:5px; flex-shrink:0; align-self:stretch; }
+.job-body { padding:13px 13px 0 11px; flex:1; min-width:0; }
+.job-title { font-size:15px; font-weight:700; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.job-meta { font-size:11px; color:#7ab3f0; margin-bottom:10px; display:flex; gap:10px; flex-wrap:wrap; }
+.job-quick { display:flex; gap:6px; padding:10px 11px; border-top:1px solid #1e2d40; margin:0 -11px; flex-wrap:wrap; }
+.qbtn { flex:1; min-width:70px; border:none; border-radius:8px; padding:10px 6px; font-size:11px; font-weight:700; cursor:pointer; transition:opacity 0.15s; }
+.qbtn:active { opacity:0.7; }
+.status-badge { display:inline-block; padding:3px 8px; border-radius:6px; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.3px; }
+
+/* ── Empty state ── */
+.empty-state { text-align:center; padding:60px 24px; color:#3a5070; }
+.empty-state .icon { font-size:48px; margin-bottom:12px; }
+.empty-state p { font-size:14px; }
+
+/* ── FAB ── */
+#fab { position:fixed; bottom:24px; right:20px; width:58px; height:58px; border-radius:50%; background:#2563eb; color:#fff; border:none; font-size:28px; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(37,99,235,0.5); z-index:200; transition:transform 0.15s; }
+#fab:active { transform:scale(0.92); }
+
+/* ── Detail overlay ── */
+#detail-overlay { position:fixed; inset:0; background:#0f1520; z-index:500; display:none; flex-direction:column; overflow:hidden; }
+#detail-overlay.show { display:flex; }
+#detail-header { background:linear-gradient(135deg,#1a2a40,#2a4a7a); padding:14px 18px; display:flex; align-items:center; gap:12px; flex-shrink:0; }
+#detail-back { background:none; border:none; color:#7ab3f0; font-size:22px; cursor:pointer; padding:0 4px; }
+#detail-title { font-size:16px; font-weight:800; flex:1; }
+#detail-body { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:18px 16px 40px; }
+
+.section-head { font-size:10px; font-weight:800; color:#7ab3f0; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px; }
+.status-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:22px; }
+.status-btn { padding:16px 10px; border-radius:12px; border:2px solid transparent; font-size:13px; font-weight:800; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:5px; transition:all 0.15s; }
+.status-btn:active { transform:scale(0.95); }
+.status-btn .sbicon { font-size:24px; }
+.status-btn.current { border-color:#fff !important; }
+
+.field-label { font-size:11px; font-weight:700; color:#7ab3f0; text-transform:uppercase; letter-spacing:0.3px; margin-bottom:6px; margin-top:18px; }
+.field-select, .field-textarea, .field-input {
+  width:100%; padding:12px 14px; border-radius:10px; border:1px solid #2a3d55; background:#131d2e;
+  color:#fff; font-size:14px; outline:none; font-family:inherit;
+}
+.field-select { appearance:none; }
+.field-textarea { resize:none; }
+.field-input::placeholder, .field-textarea::placeholder { color:#3a5070; }
+.save-btn { width:100%; padding:14px; border-radius:12px; border:none; background:#2563eb; color:#fff; font-size:15px; font-weight:800; cursor:pointer; margin-top:18px; transition:opacity 0.15s; }
+.save-btn:active { opacity:0.8; }
+.delete-btn { width:100%; padding:12px; border-radius:12px; border:1px solid #7f1d1d; background:transparent; color:#f87171; font-size:13px; font-weight:700; cursor:pointer; margin-top:10px; }
+
+/* Activity log */
+.log-entry { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid #1e2d40; font-size:12px; color:#7ab3f0; }
+.log-dot { width:8px; height:8px; border-radius:50%; background:#2563eb; flex-shrink:0; margin-top:3px; }
+
+/* ── Add job overlay ── */
+#add-overlay { position:fixed; inset:0; background:#0f1520; z-index:600; display:none; flex-direction:column; }
+#add-overlay.show { display:flex; }
+#add-header { background:linear-gradient(135deg,#1a2a40,#2a4a7a); padding:14px 18px; display:flex; align-items:center; gap:12px; flex-shrink:0; }
+#add-body { flex:1; overflow-y:auto; padding:18px 16px 40px; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <span style="font-size:26px">🔧</span>
+  <div>
+    <h1 id="header-title">Maintenance</h1>
+    <div class="sub" id="header-sub">Loading…</div>
+  </div>
+</div>
+
+<div id="flash"></div>
+
+<!-- Filter chips -->
+<div id="filter-bar">
+  <button class="filter-chip active" onclick="setFilter('all')" id="chip-all">All</button>
+  <button class="filter-chip" onclick="setFilter('open')" id="chip-open">Open</button>
+  <button class="filter-chip" onclick="setFilter('inprogress')" id="chip-inprogress">In Progress</button>
+  <button class="filter-chip" onclick="setFilter('done')" id="chip-done">Done</button>
+  <button class="filter-chip" onclick="setFilter('urgent')" id="chip-urgent">🔴 Urgent</button>
+</div>
+
+<!-- Job list -->
+<div id="job-list"></div>
+
+<!-- FAB: add new job -->
+<button id="fab" onclick="openAddJob()">＋</button>
+
+<!-- ── Job detail overlay ── -->
+<div id="detail-overlay">
+  <div id="detail-header">
+    <button id="detail-back" onclick="closeDetail()">‹</button>
+    <div id="detail-title">Job Detail</div>
+    <div id="detail-badge"></div>
+  </div>
+  <div id="detail-body">
+    <!-- Status buttons -->
+    <div class="section-head">Update Status</div>
+    <div class="status-grid" id="status-grid"></div>
+
+    <!-- Info fields -->
+    <div class="field-label">Priority</div>
+    <select class="field-select" id="det-priority" onchange="saveDetailField('priority', this.value)">
+      <option value="urgent">🔴 Urgent — immediate</option>
+      <option value="high">🟠 High — fix today</option>
+      <option value="normal">🟡 Normal — fix soon</option>
+      <option value="low">🟢 Low — when convenient</option>
+    </select>
+
+    <div class="field-label">Assign To</div>
+    <select class="field-select" id="det-assign" onchange="saveDetailField('assignedTo', this.value)">
+      <option value="">— Unassigned —</option>
+    </select>
+
+    <div class="field-label">Work Notes</div>
+    <textarea class="field-textarea" id="det-notes" rows="4" placeholder="Describe what was done, parts used, next steps…"></textarea>
+    <button class="save-btn" onclick="saveNotes()">💾 Save Notes</button>
+
+    <!-- Activity log -->
+    <div class="field-label" style="margin-top:26px">Activity Log</div>
+    <div id="det-log"></div>
+
+    <button class="delete-btn" onclick="deleteJob()">🗑 Delete this job</button>
+  </div>
+</div>
+
+<!-- ── Add new job overlay ── -->
+<div id="add-overlay">
+  <div id="add-header">
+    <button style="background:none;border:none;color:#7ab3f0;font-size:22px;cursor:pointer;padding:0 4px" onclick="closeAddJob()">‹</button>
+    <div style="font-size:16px;font-weight:800">New Maintenance Job</div>
+  </div>
+  <div id="add-body">
+    <div class="field-label">Title / Short Description</div>
+    <input class="field-input" id="add-title" placeholder="e.g. Site 14 — shower head leaking" maxlength="80">
+
+    <div class="field-label">Category</div>
+    <select class="field-select" id="add-category">
+      <option value="plumbing">🚿 Plumbing</option>
+      <option value="electrical">⚡ Electrical</option>
+      <option value="appliance">🔌 Appliance</option>
+      <option value="structural">🏗️ Structural</option>
+      <option value="grounds">🌿 Grounds</option>
+      <option value="cleaning">🧹 Cleaning</option>
+      <option value="safety">⚠️ Safety</option>
+      <option value="other">🔧 Other</option>
+    </select>
+
+    <div class="field-label">Priority</div>
+    <select class="field-select" id="add-priority">
+      <option value="urgent">🔴 Urgent — immediate</option>
+      <option value="high">🟠 High — fix today</option>
+      <option value="normal" selected>🟡 Normal — fix soon</option>
+      <option value="low">🟢 Low — when convenient</option>
+    </select>
+
+    <div class="field-label">Site (optional)</div>
+    <input class="field-input" id="add-site" placeholder="e.g. P14, Cabin 3">
+
+    <div class="field-label">Details</div>
+    <textarea class="field-textarea" id="add-desc" rows="4" placeholder="Describe the issue…"></textarea>
+
+    <div class="field-label">Reported By</div>
+    <input class="field-input" id="add-reporter" placeholder="Your name (optional)">
+
+    <button class="save-btn" onclick="submitNewJob()">✅ Add Job</button>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<script>
+// ── Storage keys (same as main app) ─────────────────────────────────────────
+const MAINT_KEY = 'maintenance_jobs';
+const STAFF_KEY = 'staff_data';
+const PARKS_KEY = 'parks';
+
+// ── Status config ────────────────────────────────────────────────────────────
+const STATUSES = {
+  open:       { label:'Open',        icon:'📋', color:'#3b82f6', bg:'#0c1a2e', stripe:'#3b82f6' },
+  inprogress: { label:'In Progress', icon:'⚙️', color:'#f59e0b', bg:'#1c1100', stripe:'#f59e0b' },
+  done:       { label:'Done',        icon:'✅', color:'#22c55e', bg:'#071a0f', stripe:'#22c55e' },
+  blocked:    { label:'Blocked',     icon:'🚫', color:'#ef4444', bg:'#1f0808', stripe:'#ef4444' },
+};
+
+const PRIORITY_COLOR = { urgent:'#ef4444', high:'#f97316', normal:'#eab308', low:'#22c55e' };
+
+// ── Data helpers ─────────────────────────────────────────────────────────────
+function loadJobs() {
+  try { return JSON.parse(localStorage.getItem(MAINT_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveJobs(jobs) {
+  localStorage.setItem(MAINT_KEY, JSON.stringify(jobs));
+}
+function loadStaff() {
+  try { return JSON.parse(localStorage.getItem(STAFF_KEY) || '[]'); } catch(e) { return []; }
+}
+function loadParkName() {
+  try {
+    const parks = JSON.parse(localStorage.getItem(PARKS_KEY) || '[]');
+    const activeId = localStorage.getItem('activeParkId');
+    const park = parks.find(p=>p.id===activeId) || parks[0];
+    return park?.name || 'Park';
+  } catch(e) { return 'Park'; }
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentFilter = 'all';
+let currentJobId  = null;
+const parkName = loadParkName();
+
+document.getElementById('header-sub').textContent = parkName;
+
+// ── Filter ───────────────────────────────────────────────────────────────────
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('chip-' + f)?.classList.add('active');
+  renderList();
+}
+
+// ── Job list ─────────────────────────────────────────────────────────────────
+function renderList() {
+  const el = document.getElementById('job-list');
+  let jobs = loadJobs();
+
+  // Filter
+  if (currentFilter === 'urgent') {
+    jobs = jobs.filter(j => j.priority === 'urgent' && j.status !== 'done');
+  } else if (currentFilter !== 'all') {
+    jobs = jobs.filter(j => j.status === currentFilter);
+  }
+
+  // Sort: urgent first, then by newest
+  jobs.sort((a,b) => {
+    const po = {urgent:0,high:1,normal:2,low:3};
+    if (a.status==='done' && b.status!=='done') return 1;
+    if (b.status==='done' && a.status!=='done') return -1;
+    const pd = (po[a.priority]||2) - (po[b.priority]||2);
+    if (pd !== 0) return pd;
+    return new Date(b.createdAt||0) - new Date(a.createdAt||0);
+  });
+
+  if (!jobs.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">🔧</div><p>${currentFilter==='all'?'No jobs yet — tap + to add one':'No jobs in this category'}</p></div>`;
+    return;
+  }
+
+  el.innerHTML = jobs.map(job => {
+    const st = STATUSES[job.status] || STATUSES.open;
+    const priColor = PRIORITY_COLOR[job.priority] || '#eab308';
+    const age = job.createdAt ? timeSince(job.createdAt) : '';
+    return `
+    <div class="job-card" onclick="openDetail('${job.id}')">
+      <div class="job-stripe" style="background:${priColor}"></div>
+      <div class="job-body">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:3px">
+          <div class="job-title">${esc(job.title)}</div>
+          <span class="status-badge" style="background:${st.bg};color:${st.color};border:1px solid ${st.color}44;flex-shrink:0">${st.icon} ${st.label}</span>
+        </div>
+        <div class="job-meta">
+          ${job.siteId ? `<span>📍 ${esc(job.siteId)}</span>` : ''}
+          ${job.category ? `<span>${catIcon(job.category)} ${cap(job.category)}</span>` : ''}
+          ${age ? `<span>⏱ ${age}</span>` : ''}
+          ${job.assignedTo ? `<span>👤 ${esc(staffName(job.assignedTo))}</span>` : ''}
+        </div>
+        <div class="job-quick" onclick="event.stopPropagation()">
+          ${job.status !== 'inprogress' ? `<button class="qbtn" style="background:#1c1100;color:#f59e0b" onclick="quickStatus('${job.id}','inprogress')">⚙️ Start</button>` : ''}
+          ${job.status !== 'done'       ? `<button class="qbtn" style="background:#071a0f;color:#22c55e" onclick="quickStatus('${job.id}','done')">✅ Done</button>` : ''}
+          ${job.status !== 'blocked'    ? `<button class="qbtn" style="background:#1f0808;color:#ef4444" onclick="quickStatus('${job.id}','blocked')">🚫 Blocked</button>` : ''}
+          ${job.status !== 'open'       ? `<button class="qbtn" style="background:#0c1a2e;color:#3b82f6" onclick="quickStatus('${job.id}','open')">📋 Reopen</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function quickStatus(id, newStatus) {
+  const jobs = loadJobs();
+  const idx = jobs.findIndex(j => j.id === id);
+  if (idx < 0) return;
+  const prev = jobs[idx].status;
+  jobs[idx].status = newStatus;
+  if (!jobs[idx].activityLog) jobs[idx].activityLog = [];
+  jobs[idx].activityLog.unshift({ at: new Date().toISOString(), msg: `Status changed: ${STATUSES[prev]?.label||prev} → ${STATUSES[newStatus]?.label||newStatus}` });
+  saveJobs(jobs);
+  flash(`${STATUSES[newStatus]?.icon} ${jobs[idx].title} — ${STATUSES[newStatus]?.label}`);
+  renderList();
+  if (currentJobId === id) renderDetailBody(id);
+}
+
+// ── Detail ───────────────────────────────────────────────────────────────────
+function openDetail(id) {
+  currentJobId = id;
+  document.getElementById('detail-overlay').classList.add('show');
+  renderDetailBody(id);
+}
+
+function renderDetailBody(id) {
+  const jobs = loadJobs();
+  const job = jobs.find(j => j.id === id);
+  if (!job) { closeDetail(); return; }
+
+  const st = STATUSES[job.status] || STATUSES.open;
+  document.getElementById('detail-title').textContent = job.title;
+  document.getElementById('detail-badge').innerHTML = `<span class="status-badge" style="background:${st.bg};color:${st.color};border:1px solid ${st.color}44">${st.icon} ${st.label}</span>`;
+
+  // Status grid
+  document.getElementById('status-grid').innerHTML = Object.entries(STATUSES).map(([key, s]) => `
+    <button class="status-btn ${job.status===key?'current':''}" style="background:${s.bg};color:${s.color};border-color:${job.status===key?'#fff':s.color+'44'}" onclick="quickStatus('${id}','${key}')">
+      <span class="sbicon">${s.icon}</span>${s.label}
+    </button>`).join('');
+
+  // Priority
+  const priSel = document.getElementById('det-priority');
+  priSel.value = job.priority || 'normal';
+
+  // Assign
+  const staff = loadStaff().filter(s => s.role === 'maintenance' || s.role === 'general' || true);
+  const assignSel = document.getElementById('det-assign');
+  assignSel.innerHTML = '<option value="">— Unassigned —</option>' +
+    staff.map(s => `<option value="${s.id}" ${job.assignedTo===s.id?'selected':''}>${esc(s.name)}</option>`).join('');
+
+  // Notes
+  document.getElementById('det-notes').value = job.resolutionNotes || '';
+
+  // Activity log
+  const log = job.activityLog || [];
+  document.getElementById('det-log').innerHTML = log.length
+    ? log.map(e => `<div class="log-entry"><div class="log-dot"></div><div><div>${esc(e.msg)}</div><div style="font-size:10px;opacity:0.6;margin-top:2px">${fmtDate(e.at)}</div></div></div>`).join('')
+    : '<div style="color:#3a5070;font-size:12px;padding:8px 0">No activity yet</div>';
+}
+
+function closeDetail() {
+  currentJobId = null;
+  document.getElementById('detail-overlay').classList.remove('show');
+  renderList();
+}
+
+function saveDetailField(field, value) {
+  if (!currentJobId) return;
+  const jobs = loadJobs();
+  const idx = jobs.findIndex(j => j.id === currentJobId);
+  if (idx < 0) return;
+  jobs[idx][field] = value;
+  if (!jobs[idx].activityLog) jobs[idx].activityLog = [];
+  jobs[idx].activityLog.unshift({ at: new Date().toISOString(), msg: `${cap(field)} updated to: ${value}` });
+  saveJobs(jobs);
+  flash('✅ Saved');
+}
+
+function saveNotes() {
+  if (!currentJobId) return;
+  const jobs = loadJobs();
+  const idx = jobs.findIndex(j => j.id === currentJobId);
+  if (idx < 0) return;
+  const notes = document.getElementById('det-notes').value.trim();
+  jobs[idx].resolutionNotes = notes;
+  if (!jobs[idx].activityLog) jobs[idx].activityLog = [];
+  jobs[idx].activityLog.unshift({ at: new Date().toISOString(), msg: 'Work notes updated' });
+  saveJobs(jobs);
+  flash('💾 Notes saved');
+  renderDetailBody(currentJobId);
+}
+
+function deleteJob() {
+  if (!currentJobId) return;
+  if (!confirm('Delete this job? This cannot be undone.')) return;
+  const jobs = loadJobs().filter(j => j.id !== currentJobId);
+  saveJobs(jobs);
+  closeDetail();
+  flash('🗑 Job deleted');
+}
+
+// ── Add new job ───────────────────────────────────────────────────────────────
+function openAddJob() {
+  document.getElementById('add-title').value = '';
+  document.getElementById('add-desc').value = '';
+  document.getElementById('add-site').value = '';
+  document.getElementById('add-reporter').value = '';
+  document.getElementById('add-priority').value = 'normal';
+  document.getElementById('add-category').value = 'other';
+  document.getElementById('add-overlay').classList.add('show');
+  setTimeout(() => document.getElementById('add-title').focus(), 200);
+}
+
+function closeAddJob() {
+  document.getElementById('add-overlay').classList.remove('show');
+}
+
+function submitNewJob() {
+  const title = document.getElementById('add-title').value.trim();
+  if (!title) { flash('⚠️ Please enter a title'); return; }
+  const job = {
+    id:         'mj_' + Date.now(),
+    title,
+    category:   document.getElementById('add-category').value,
+    priority:   document.getElementById('add-priority').value,
+    siteId:     document.getElementById('add-site').value.trim(),
+    description:document.getElementById('add-desc').value.trim(),
+    reportedBy: document.getElementById('add-reporter').value.trim(),
+    status:     'open',
+    assignedTo: '',
+    resolutionNotes: '',
+    createdAt:  new Date().toISOString(),
+    activityLog:[{ at: new Date().toISOString(), msg: 'Job created' + (document.getElementById('add-reporter').value.trim() ? ' by ' + document.getElementById('add-reporter').value.trim() : '') }],
+  };
+  const jobs = loadJobs();
+  jobs.unshift(job);
+  saveJobs(jobs);
+  closeAddJob();
+  flash('✅ Job added');
+  renderList();
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function cap(s) { return s ? s.charAt(0).toUpperCase()+s.slice(1) : ''; }
+function catIcon(c) { return {plumbing:'🚿',electrical:'⚡',appliance:'🔌',structural:'🏗️',grounds:'🌿',cleaning:'🧹',safety:'⚠️',other:'🔧'}[c]||'🔧'; }
+
+function staffName(id) {
+  const s = loadStaff().find(s=>s.id===id);
+  return s ? s.name : id;
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+
+function timeSince(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff/60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m/60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h/24) + 'd ago';
+}
+
+function flash(msg) {
+  const el = document.getElementById('flash');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.display='none', 2000);
+}
+
+// ── Poll for changes from main app (every 10s) ───────────────────────────────
+setInterval(renderList, 10000);
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+renderList();
+</script>
+</body>
+</html>
