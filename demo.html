@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SiteHelm — Live Demo</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzFCNDMzMiIvPgogIDxwYXRoIGQ9Ik0xNiA0IEMxNiA0IDYgMTAgNiAyMCBDNiAyNiAxMCAyOCAxNiAyOCBDMjIgMjggMjYgMjYgMjYgMjAgQzI2IDEwIDE2IDQgMTYgNCBaIiBmaWxsPSIjNTJCNzg4Ii8+CiAgPHBhdGggZD0iTTE2IDI4IEMxNiAyOCAxNiAxNiAxMCAxMCIgc3Ryb2tlPSIjMUI0MzMyIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIiBvcGFjaXR5PSIwLjUiLz4KPC9zdmc+">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0d1f16;
+  color: #e8f0e9;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  background: linear-gradient(135deg, #1B4332 0%, #0f2018 100%);
+  padding: 32px 40px 28px;
+  text-align: center;
+  border-bottom: 1px solid rgba(82,183,136,0.2);
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(82,183,136,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.logo-leaf {
+  font-size: 32px;
+}
+.logo-text {
+  font-size: 28px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+.logo-text span { color: #52B788; }
+.header-tagline {
+  font-size: 14px;
+  color: #74c69d;
+  letter-spacing: 0.3px;
+  margin-bottom: 20px;
+}
+.demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(82,183,136,0.15);
+  border: 1px solid rgba(82,183,136,0.35);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  color: #52B788;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.demo-badge::before { content: '●'; font-size: 8px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ── Park info strip ── */
+.park-strip {
+  background: rgba(82,183,136,0.07);
+  border-bottom: 1px solid rgba(82,183,136,0.12);
+  padding: 10px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #74c69d;
+}
+.park-strip strong { color: #52B788; }
+
+/* ── Main layout ── */
+main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 36px 20px 60px;
+}
+
+/* ── Section heading ── */
+.section-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: #52B788;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(82,183,136,0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(82,183,136,0.15);
+}
+
+/* ── Card grid ── */
+.card-grid {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 36px;
+}
+.card-grid.cols-1 { grid-template-columns: 1fr; }
+.card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* ── Demo card ── */
+.demo-card {
+  background: #132a1e;
+  border: 1px solid rgba(82,183,136,0.15);
+  border-radius: 14px;
+  padding: 20px 22px;
+  text-decoration: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  transition: all 0.18s;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.demo-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--accent, #52B788);
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.demo-card:hover {
+  border-color: var(--accent, #52B788);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.3);
+  background: #1a3826;
+}
+.demo-card:hover::before { opacity: 1; }
+
+/* Hero card (full width, bigger) */
+.demo-card.hero-card {
+  padding: 28px 28px;
+  background: linear-gradient(135deg, #1B4332 0%, #132a1e 100%);
+  border-color: rgba(82,183,136,0.3);
+}
+.demo-card.hero-card:hover {
+  border-color: #52B788;
+  box-shadow: 0 12px 40px rgba(82,183,136,0.2);
+}
+
+.card-icon {
+  font-size: 30px;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(82,183,136,0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(82,183,136,0.2);
+}
+.hero-card .card-icon {
+  font-size: 36px;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: rgba(82,183,136,0.15);
+}
+
+.card-body { flex: 1; min-width: 0; }
+.card-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #e8f0e9;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-card .card-title { font-size: 18px; margin-bottom: 6px; }
+.card-desc {
+  font-size: 12px;
+  color: #74c69d;
+  line-height: 1.6;
+}
+.hero-card .card-desc { font-size: 13px; }
+.card-badge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.badge-staff   { background: rgba(124,131,253,0.2); color: #7C83FD; }
+.badge-guest   { background: rgba(249,199,74,0.2);  color: #f9c74f; }
+.badge-new     { background: rgba(82,183,136,0.25); color: #52B788; }
+.badge-soon    { background: rgba(249,115,22,0.2);  color: #f97316; }
+.badge-main    { background: rgba(82,183,136,0.2);  color: #52B788; font-size: 10px; padding: 3px 10px; }
+
+.card-arrow {
+  color: rgba(82,183,136,0.4);
+  font-size: 18px;
+  align-self: center;
+  flex-shrink: 0;
+  transition: transform 0.15s, color 0.15s;
+}
+.demo-card:hover .card-arrow {
+  color: #52B788;
+  transform: translateX(3px);
+}
+
+/* ── Tip box ── */
+.tip-box {
+  background: rgba(82,183,136,0.06);
+  border: 1px solid rgba(82,183,136,0.2);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 36px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.tip-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.tip-text { font-size: 12px; color: #74c69d; line-height: 1.7; }
+.tip-text strong { color: #52B788; }
+
+/* ── Footer ── */
+footer {
+  text-align: center;
+  padding: 24px;
+  font-size: 11px;
+  color: rgba(116,198,157,0.5);
+  border-top: 1px solid rgba(82,183,136,0.1);
+}
+footer a { color: #52B788; text-decoration: none; }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  header { padding: 24px 20px 20px; }
+  main { padding: 24px 14px 40px; }
+  .card-grid.cols-2,
+  .card-grid.cols-3,
+  .card-grid.cols-4 { grid-template-columns: 1fr; }
+  .park-strip { gap: 14px; padding: 10px 20px; }
+}
+@media (max-width: 500px) {
+  .demo-card { padding: 16px; gap: 12px; }
+  .card-icon { width: 42px; height: 42px; font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-row">
+    <span class="logo-leaf">🌿</span>
+    <div class="logo-text">Site<span>Helm</span></div>
+  </div>
+  <div class="header-tagline">Take the helm of your park</div>
+  <div class="demo-badge">Live Demo — Billabong Breeze, Mundaring WA</div>
+</header>
+
+<div class="park-strip">
+  <span>🏕️ <strong>Billabong Breeze</strong> Caravan &amp; Holiday Park</span>
+  <span>📍 Mundaring, WA</span>
+  <span>🌐 Demo environment — all data is sample data</span>
+</div>
+
+<main>
+
+  <!-- Tip -->
+  <div class="tip-box">
+    <div class="tip-icon">💡</div>
+    <div class="tip-text">
+      <strong>Start here:</strong> Open the <strong>Main Park App</strong> below and click <strong>🎬 Load Demo Data</strong> (found in Backup → Developer Tools) to populate the system with 36 bookings, 7 maintenance jobs and full housekeeping scenarios. Then explore any page from this launcher.
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div class="section-label">🖥️ Main Management System</div>
+  <div class="card-grid cols-1" style="margin-bottom:36px">
+    <a href="caravan-park-satellite.html" target="_blank" class="demo-card hero-card" style="--accent:#52B788">
+      <div class="card-icon">🗺️</div>
+      <div class="card-body">
+        <div class="card-title">
+          SiteHelm Park Manager
+          <span class="card-badge badge-main">MAIN APP</span>
+        </div>
+        <div class="card-desc">
+          The complete management system — live satellite map, bookings, dashboard, housekeeping, maintenance, staff, rates, ARIA AI assistant and more. Load demo data then explore all 14 tabs.
+        </div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+  </div>
+
+  <!-- GUEST-FACING PAGES -->
+  <div class="section-label">👤 Guest-Facing Pages</div>
+  <div class="card-grid cols-2">
+
+    <a href="book.html" target="_blank" class="demo-card" style="--accent:#f9c74f">
+      <div class="card-icon">📅</div>
+      <div class="card-body">
+        <div class="card-title">Online Booking Form <span class="card-badge badge-guest">GUEST</span></div>
+        <div class="card-desc">Public booking form guests use to reserve a site. Checks availability and submits the booking to the park system.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a href="arrive.html" target="_blank" class="demo-card" style="--accent:#f9c74f">
+      <div class="card-icon">🚪</div>
+      <div class="card-body">
+        <div class="card-title">Gate Noticeboard <span class="card-badge badge-guest">GUEST</span></div>
+        <div class="card-desc">After-hours self check-in lookup. Guests enter their surname and arrival date to find their site number and park info.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a href="checkin.html" target="_blank" class="demo-card" style="--accent:#f9c74f">
+      <div class="card-icon">✅</div>
+      <div class="card-body">
+        <div class="card-title">Guest Self Check-In <span class="card-badge badge-new">NEW</span></div>
+        <div class="card-desc">Secure link sent to guest by SMS. They confirm arrival, view their site, WiFi password and park rules. Park gets notified instantly.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+  </div>
+
+  <!-- STAFF PAGES -->
+  <div class="section-label">👷 Staff Pages</div>
+  <div class="card-grid cols-2">
+
+    <a href="housekeeping.html" target="_blank" class="demo-card" style="--accent:#7C83FD">
+      <div class="card-icon">🧹</div>
+      <div class="card-body">
+        <div class="card-title">Housekeeping Tablet <span class="card-badge badge-staff">STAFF</span></div>
+        <div class="card-desc">Mobile-optimised page for cleaning staff. Scan a site QR code to update its status — dirty, cleaning, or ready for inspection.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a href="clockon.html" target="_blank" class="demo-card" style="--accent:#7C83FD">
+      <div class="card-icon">⏱️</div>
+      <div class="card-body">
+        <div class="card-title">Staff Clock On / Off <span class="card-badge badge-staff">STAFF</span></div>
+        <div class="card-desc">QR terminal for staff to clock on and off. Tracks hours worked, generates time reports viewable in the main app under Staff.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+  </div>
+
+  <!-- DOCUMENTS -->
+  <div class="section-label">📄 Documentation &amp; Guides</div>
+  <div class="card-grid cols-3">
+
+    <a href="SiteHelm_User_Guide.pdf" target="_blank" class="demo-card" style="--accent:#74c69d">
+      <div class="card-icon">📖</div>
+      <div class="card-body">
+        <div class="card-title">User Guide</div>
+        <div class="card-desc">8-page guide covering all features and how to use them day-to-day.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a href="SiteHelm_Onboarding_Guide.pdf" target="_blank" class="demo-card" style="--accent:#74c69d">
+      <div class="card-icon">🚀</div>
+      <div class="card-body">
+        <div class="card-title">Onboarding Guide</div>
+        <div class="card-desc">Step-by-step setup guide for new parks going live on SiteHelm.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a href="SiteHelm_Terms_and_Conditions.pdf" target="_blank" class="demo-card" style="--accent:#74c69d">
+      <div class="card-icon">📋</div>
+      <div class="card-body">
+        <div class="card-title">Terms &amp; Conditions</div>
+        <div class="card-desc">Service agreement and terms of use for SiteHelm subscribers.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a href="SiteHelm_After_Hours_CheckIn.pdf" target="_blank" class="demo-card" style="--accent:#74c69d">
+      <div class="card-icon">🌙</div>
+      <div class="card-body">
+        <div class="card-title">After Hours Check-In</div>
+        <div class="card-desc">Feature overview for the self check-in and gate noticeboard system.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+    <a href="SiteHelm_Feature_List.docx" target="_blank" class="demo-card" style="--accent:#74c69d">
+      <div class="card-icon">📝</div>
+      <div class="card-body">
+        <div class="card-title">Feature List</div>
+        <div class="card-desc">Complete 21-section feature breakdown — useful for prospect comparisons.</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </a>
+
+  </div>
+
+  <!-- COMING SOON -->
+  <div class="section-label">🔜 Coming Soon</div>
+  <div class="card-grid cols-2">
+
+    <div class="demo-card" style="--accent:#f97316;opacity:0.6;cursor:default">
+      <div class="card-icon" style="background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.2)">📸</div>
+      <div class="card-body">
+        <div class="card-title">ANPR — Vehicle Recognition <span class="card-badge badge-soon">SOON</span></div>
+        <div class="card-desc">Automatic number plate recognition at the gate. Know who's arriving before they reach reception.</div>
+      </div>
+    </div>
+
+    <div class="demo-card" style="--accent:#f97316;opacity:0.6;cursor:default">
+      <div class="card-icon" style="background:rgba(249,115,22,0.1);border-color:rgba(249,115,22,0.2)">📅</div>
+      <div class="card-body">
+        <div class="card-title">Park Event Calendar <span class="card-badge badge-soon">SOON</span></div>
+        <div class="card-desc">Schedule trivia nights, markets, pool closures and school holiday events. Visible to guests in their arrival guide.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Pricing reminder -->
+  <div class="tip-box" style="margin-bottom:0;margin-top:8px">
+    <div class="tip-icon">💰</div>
+    <div class="tip-text">
+      <strong>Pricing:</strong> $79/mo for up to 30 sites · $149/mo for 31–100 sites · $299/mo multi-park.
+      &nbsp;|&nbsp; <strong>No setup fees. No lock-in contracts.</strong>
+      &nbsp;|&nbsp; Contact <a href="mailto:hello@sitehelm.com.au" style="color:#52B788">hello@sitehelm.com.au</a>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  &copy; 2026 SiteHelm — Built for Australian Caravan Parks &nbsp;·&nbsp;
+  <a href="index.html">Back to website</a> &nbsp;·&nbsp;
+  <a href="caravan-park-satellite.html" target="_blank">Open main app</a>
+</footer>
+
+</body>
+</html>
