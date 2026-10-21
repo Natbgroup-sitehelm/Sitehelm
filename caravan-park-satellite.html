@@ -375,6 +375,19 @@
   .sms-preview { background: #0f1f15; border-radius: 12px; padding: 14px 16px; border-left: 4px solid #52B788; font-size: 13px; color: #e8f0e9; line-height: 1.6; white-space: pre-wrap; font-family: monospace; }
 
   /* ── Command Palette ── */
+  /* Events Calendar */
+  #events-panel { display:none; flex:1; overflow:hidden; }
+  #events-panel.show { display:flex; }
+  .ev-cell { background:var(--bg); padding:5px 6px; min-height:90px; display:flex; flex-direction:column; gap:2px; cursor:default; }
+  .ev-cell.ev-today { background:var(--bg-active,rgba(82,183,136,0.08)); }
+  .ev-cell.ev-other-month { opacity:0.38; }
+  .ev-cell-date { font-size:11px; font-weight:700; color:var(--fg-muted); margin-bottom:2px; }
+  .ev-cell.ev-today .ev-cell-date { background:#2D6A4F; color:#fff; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; }
+  .ev-chip { font-size:10px; font-weight:600; color:#fff; border-radius:4px; padding:1px 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; line-height:16px; }
+  .ev-chip:hover { filter:brightness(1.15); }
+  .ev-upcoming-item { padding:8px 10px; border-radius:8px; margin-bottom:6px; cursor:pointer; }
+  .ev-upcoming-item:hover { filter:brightness(1.1); }
+  #event-modal-overlay.open { display:flex!important; }
   #cmd-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.65); backdrop-filter:blur(3px); z-index:9900; display:none; align-items:flex-start; justify-content:center; padding-top:clamp(60px,12vh,120px); }
   #cmd-overlay.open { display:flex; }
   #cmd-palette { width:100%; max-width:560px; background:#122819; border:1px solid #2D6A4F; border-radius:12px; box-shadow:0 25px 60px rgba(0,0,0,0.7); overflow:hidden; animation:cmdSlideIn 0.15s ease; }
@@ -883,6 +896,7 @@
   <div class="tab" onclick="switchTab('dashboard')">📊 Dashboard</div>
   <div class="tab" onclick="switchTab('bookings')" style="position:relative">📋 Bookings<span id="incomplete-tab-badge" style="display:none;position:absolute;top:4px;right:4px;background:#f9c74f;color:#1a1a00;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:800;display:none;align-items:center;justify-content:center" id="incomplete-tab-badge"></span></div>
   <div class="tab" onclick="switchTab('grid')">📅 Availability</div>
+  <div class="tab" onclick="switchTab('events')">📆 Events</div>
   <div class="tab" onclick="switchTab('movements')">🚶 Movements</div>
   <div class="tab" onclick="switchTab('sms')">📡 Comms</div>
   <div class="tab" onclick="switchTab('staff')">👥 Staff</div>
@@ -1753,6 +1767,101 @@ app.post('/refund', async (req, res) => {
       </details>
     </div>
 
+  </div>
+
+  <!-- EVENTS PANEL -->
+  <div id="events-panel">
+    <div id="events-sidebar" style="width:280px;flex-shrink:0;background:var(--bg-panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;padding:0">
+      <div style="padding:16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;color:var(--fg);margin-bottom:12px">📆 UPCOMING EVENTS</div>
+        <button onclick="openEventModal()" style="width:100%;background:#2D6A4F;color:#fff;border:none;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Add Event
+        </button>
+      </div>
+      <div id="events-upcoming-list" style="flex:1;overflow-y:auto;padding:10px"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;color:var(--fg-muted);margin-bottom:8px">CATEGORIES</div>
+        <div style="display:flex;flex-direction:column;gap:5px" id="events-legend">
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg)"><span style="width:12px;height:12px;border-radius:3px;background:#e63946;display:inline-block"></span>Peak Season</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg)"><span style="width:12px;height:12px;border-radius:3px;background:#f4a261;display:inline-block"></span>School Holidays</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg)"><span style="width:12px;height:12px;border-radius:3px;background:#457b9d;display:inline-block"></span>Local Event</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg)"><span style="width:12px;height:12px;border-radius:3px;background:#52B788;display:inline-block"></span>Staff Event</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg)"><span style="width:12px;height:12px;border-radius:3px;background:#9b5de5;display:inline-block"></span>Maintenance</div>
+          <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg)"><span style="width:12px;height:12px;border-radius:3px;background:#aaa;display:inline-block"></span>Other</div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
+      <!-- Calendar header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg-panel);flex-shrink:0">
+        <button onclick="eventsNavMonth(-1)" style="background:var(--bg-hover);border:1px solid var(--border);color:var(--fg);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px">◀</button>
+        <div>
+          <span id="events-month-label" style="font-size:16px;font-weight:700;color:var(--fg)"></span>
+          <button onclick="eventsGoToday()" style="margin-left:10px;background:none;border:1px solid var(--border);color:var(--accent);border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;cursor:pointer">Today</button>
+        </div>
+        <button onclick="eventsNavMonth(1)" style="background:var(--bg-hover);border:1px solid var(--border);color:var(--fg);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:13px">▶</button>
+      </div>
+      <!-- Day-of-week headers -->
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);background:var(--bg-panel);border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--fg-muted)">Sun</div>
+        <div style="padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--fg-muted)">Mon</div>
+        <div style="padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--fg-muted)">Tue</div>
+        <div style="padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--fg-muted)">Wed</div>
+        <div style="padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--fg-muted)">Thu</div>
+        <div style="padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--fg-muted)">Fri</div>
+        <div style="padding:8px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--fg-muted)">Sat</div>
+      </div>
+      <!-- Calendar grid -->
+      <div id="events-cal-grid" style="flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:minmax(90px,1fr);gap:1px;background:var(--border)"></div>
+    </div>
+
+    <!-- Add/Edit Event Modal -->
+    <div id="event-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:8000;align-items:center;justify-content:center">
+      <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:14px;width:460px;max-width:95vw;padding:24px;box-shadow:0 20px 50px rgba(0,0,0,0.5)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div style="font-size:15px;font-weight:700;color:var(--fg)" id="event-modal-title">Add Event</div>
+          <button onclick="closeEventModal()" style="background:none;border:none;color:var(--fg-muted);font-size:18px;cursor:pointer">✕</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Event Name</label>
+            <input id="ev-name" type="text" placeholder="e.g. Easter Long Weekend" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 11px;color:var(--fg);font-size:13px">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Start Date</label>
+              <input id="ev-start" type="date" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 11px;color:var(--fg);font-size:13px">
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">End Date</label>
+              <input id="ev-end" type="date" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 11px;color:var(--fg);font-size:13px">
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Category</label>
+            <select id="ev-cat" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 11px;color:var(--fg);font-size:13px">
+              <option value="peak">Peak Season</option>
+              <option value="school">School Holidays</option>
+              <option value="local">Local Event</option>
+              <option value="staff">Staff Event</option>
+              <option value="maintenance">Maintenance</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px">Notes (optional)</label>
+            <textarea id="ev-notes" rows="2" placeholder="Any extra details…" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 11px;color:var(--fg);font-size:13px;resize:vertical"></textarea>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:18px">
+          <button id="ev-delete-btn" onclick="deleteCurrentEvent()" style="display:none;background:#3d0000;color:#ff6b6b;border:1px solid #7a0000;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer">Delete</button>
+          <div style="flex:1"></div>
+          <button onclick="closeEventModal()" style="background:var(--bg-hover);border:1px solid var(--border);color:var(--fg);border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+          <button onclick="saveEvent()" style="background:#2D6A4F;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;cursor:pointer">Save Event</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- MOVEMENTS PANEL -->
@@ -4643,7 +4752,7 @@ function renderDashMiniChart() {
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach((t,i)=>{ t.classList.toggle('active', ['map','dashboard','bookings','grid','movements','sms','staff','housekeeping','rates','maintenance','settings','backup','anpr'][i]===tab); });
+  document.querySelectorAll('.tab').forEach((t,i)=>{ t.classList.toggle('active', ['map','dashboard','bookings','grid','events','movements','sms','staff','housekeeping','rates','maintenance','settings','backup','anpr'][i]===tab); });
   document.getElementById('map-panel').classList.toggle('hide', tab!=='map');
   document.getElementById('dashboard-panel').classList.toggle('show', tab==='dashboard');
   document.getElementById('bookings-panel').classList.toggle('show', tab==='bookings');
@@ -4673,6 +4782,8 @@ function switchTab(tab) {
   if (tab==='staff') { renderStaffList(); renderStaffStats(); populateStaffParkFilter(); initReportDates(); renderHoursReport(); setTimeout(generateQR, 100); }
   if (tab==='grid') { renderGrid(); }
   if (tab==='backup') { renderBackupPanel(); }
+  const evEl = document.getElementById('events-panel'); if(evEl) evEl.classList.toggle('show', tab==='events');
+  if (tab==='events') { renderEventsCalendar(); }
   if (tab==='movements') { initMovements(); }
   if (tab==='settings') { renderSiteManager(); renderPricingDefaults(); initEmbedCode(); loadGhlSettings(); renderActiveBlocks(); initLoyaltySettings(); loadParkInfo(); const sp=document.getElementById('settings-panel'); if(sp) sp.scrollTop=0; setTimeout(initSettingsAccordion, 200); }
   if (tab==='housekeeping') { renderHousekeeping(); }
@@ -15490,6 +15601,7 @@ const CMD_ITEMS = [
   { g:'Pages', icon:'📊', name:'Dashboard',           path:'Overview & today\'s summary',       tag:null,      action:()=>switchTab('dashboard') },
   { g:'Pages', icon:'📅', name:'Bookings',            path:'Reservations list',                 tag:null,      action:()=>switchTab('bookings') },
   { g:'Pages', icon:'🗺️', name:'Site Map',            path:'Visual park layout grid',           tag:null,      action:()=>switchTab('grid') },
+  { g:'Pages', icon:'📆', name:'Event Calendar',       path:'Park events, peak periods & holidays', tag:null,  action:()=>switchTab('events') },
   { g:'Pages', icon:'🔄', name:'Movements',           path:'Arrivals & departures register',    tag:null,      action:()=>switchTab('movements') },
   { g:'Pages', icon:'🧹', name:'Housekeeping Board',  path:'Cleaning status for every site',    tag:null,      action:()=>switchTab('housekeeping') },
   { g:'Pages', icon:'🔧', name:'Maintenance Board',   path:'Open jobs & issue tracking',        tag:null,      action:()=>switchTab('maintenance') },
@@ -15705,6 +15817,199 @@ function initSettingsAccordion() {
   // Open first accordion by default
   panel.querySelector('.settings-accordion')?.classList.add('acc-open');
 }
+
+// ── PARK EVENT CALENDAR ──────────────────────────────────────────────────────
+
+const EV_COLORS = {
+  peak:        '#e63946',
+  school:      '#f4a261',
+  local:       '#457b9d',
+  staff:       '#52B788',
+  maintenance: '#9b5de5',
+  other:       '#888',
+};
+const EV_LABELS = {
+  peak:'Peak Season', school:'School Holidays', local:'Local Event',
+  staff:'Staff Event', maintenance:'Maintenance', other:'Other'
+};
+
+let _evYear  = new Date().getFullYear();
+let _evMonth = new Date().getMonth(); // 0-based
+let _editingEventId = null;
+
+function loadEvents() {
+  try { return JSON.parse(localStorage.getItem('park_events') || '[]'); } catch(e) { return []; }
+}
+function saveEvents(evs) {
+  try { localStorage.setItem('park_events', JSON.stringify(evs)); } catch(e) {}
+}
+
+function renderEventsCalendar() {
+  const evs = loadEvents();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('events-month-label').textContent = `${monthNames[_evMonth]} ${_evYear}`;
+
+  // Build calendar grid
+  const grid = document.getElementById('events-cal-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  const firstDay = new Date(_evYear, _evMonth, 1).getDay();
+  const daysInMonth = new Date(_evYear, _evMonth+1, 0).getDate();
+  const daysInPrev  = new Date(_evYear, _evMonth, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Total cells: fill to complete weeks
+  const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+
+  for (let i = 0; i < totalCells; i++) {
+    let cellDate, otherMonth = false;
+    if (i < firstDay) {
+      cellDate = new Date(_evYear, _evMonth-1, daysInPrev - firstDay + i + 1);
+      otherMonth = true;
+    } else if (i >= firstDay + daysInMonth) {
+      cellDate = new Date(_evYear, _evMonth+1, i - firstDay - daysInMonth + 1);
+      otherMonth = true;
+    } else {
+      cellDate = new Date(_evYear, _evMonth, i - firstDay + 1);
+    }
+
+    const isToday = cellDate.getTime() === today.getTime();
+    const cell = document.createElement('div');
+    cell.className = 'ev-cell' + (isToday?' ev-today':'') + (otherMonth?' ev-other-month':'');
+
+    const dateNum = document.createElement('div');
+    dateNum.className = 'ev-cell-date';
+    dateNum.textContent = cellDate.getDate();
+    cell.appendChild(dateNum);
+
+    // Find events that span this day
+    const dateStr = fmtDateStr(cellDate);
+    const dayEvs = evs.filter(e => e.start <= dateStr && e.end >= dateStr);
+    dayEvs.slice(0,3).forEach(ev => {
+      const chip = document.createElement('div');
+      chip.className = 'ev-chip';
+      chip.style.background = EV_COLORS[ev.cat] || EV_COLORS.other;
+      chip.textContent = ev.name;
+      chip.title = `${ev.name}\n${ev.start} → ${ev.end}${ev.notes?'\n'+ev.notes:''}`;
+      chip.onclick = () => openEventModal(ev);
+      cell.appendChild(chip);
+    });
+    if (dayEvs.length > 3) {
+      const more = document.createElement('div');
+      more.style.cssText = 'font-size:10px;color:var(--fg-muted);padding:0 2px';
+      more.textContent = `+${dayEvs.length-3} more`;
+      cell.appendChild(more);
+    }
+
+    // Click empty area to add event on that date
+    cell.addEventListener('click', (e) => {
+      if (e.target === cell || e.target === dateNum) {
+        openEventModal(null, fmtDateStr(cellDate));
+      }
+    });
+
+    grid.appendChild(cell);
+  }
+
+  // Upcoming list
+  renderUpcomingList(evs);
+}
+
+function renderUpcomingList(evs) {
+  const list = document.getElementById('events-upcoming-list');
+  if (!list) return;
+  const todayStr = fmtDateStr(new Date());
+  const upcoming = evs
+    .filter(e => e.end >= todayStr)
+    .sort((a,b) => a.start.localeCompare(b.start))
+    .slice(0, 20);
+
+  if (!upcoming.length) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--fg-muted);padding:10px;text-align:center">No upcoming events.<br>Click a date or Add Event.</div>';
+    return;
+  }
+  list.innerHTML = upcoming.map(ev => `
+    <div class="ev-upcoming-item" style="background:${EV_COLORS[ev.cat]}22;border-left:3px solid ${EV_COLORS[ev.cat]}"
+         onclick="openEventModal(${JSON.stringify(ev).replace(/"/g,'&quot;')})">
+      <div style="font-size:12px;font-weight:700;color:var(--fg)">${ev.name}</div>
+      <div style="font-size:10px;color:var(--fg-muted);margin-top:2px">${fmtDateRange(ev.start,ev.end)} · <span style="color:${EV_COLORS[ev.cat]}">${EV_LABELS[ev.cat]||'Other'}</span></div>
+      ${ev.notes?`<div style="font-size:10px;color:var(--fg-muted);margin-top:2px">${ev.notes}</div>`:''}
+    </div>
+  `).join('');
+}
+
+function fmtDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDateRange(s, e) {
+  const fmt = str => { const [y,m,d] = str.split('-'); return `${d}/${m}/${y.slice(2)}`; };
+  return s===e ? fmt(s) : `${fmt(s)} – ${fmt(e)}`;
+}
+
+function eventsNavMonth(dir) {
+  _evMonth += dir;
+  if (_evMonth > 11) { _evMonth = 0; _evYear++; }
+  if (_evMonth < 0)  { _evMonth = 11; _evYear--; }
+  renderEventsCalendar();
+}
+function eventsGoToday() {
+  const now = new Date();
+  _evYear = now.getFullYear(); _evMonth = now.getMonth();
+  renderEventsCalendar();
+}
+
+function openEventModal(ev, prefillDate) {
+  _editingEventId = ev ? ev.id : null;
+  document.getElementById('event-modal-title').textContent = ev ? 'Edit Event' : 'Add Event';
+  document.getElementById('ev-name').value  = ev ? ev.name  : '';
+  document.getElementById('ev-cat').value   = ev ? ev.cat   : 'peak';
+  document.getElementById('ev-notes').value = ev ? (ev.notes||'') : '';
+  const today = prefillDate || fmtDateStr(new Date());
+  document.getElementById('ev-start').value = ev ? ev.start : today;
+  document.getElementById('ev-end').value   = ev ? ev.end   : today;
+  document.getElementById('ev-delete-btn').style.display = ev ? 'block' : 'none';
+  document.getElementById('event-modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('ev-name').focus(), 50);
+}
+function closeEventModal() {
+  document.getElementById('event-modal-overlay').classList.remove('open');
+  _editingEventId = null;
+}
+function saveEvent() {
+  const name  = document.getElementById('ev-name').value.trim();
+  const start = document.getElementById('ev-start').value;
+  const end   = document.getElementById('ev-end').value;
+  const cat   = document.getElementById('ev-cat').value;
+  const notes = document.getElementById('ev-notes').value.trim();
+  if (!name || !start || !end) { notify('Please fill in name and dates.','#e63946'); return; }
+  if (end < start) { notify('End date must be on or after start date.','#e63946'); return; }
+  const evs = loadEvents();
+  if (_editingEventId) {
+    const idx = evs.findIndex(e => e.id === _editingEventId);
+    if (idx >= 0) evs[idx] = { id:_editingEventId, name, start, end, cat, notes };
+  } else {
+    evs.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), name, start, end, cat, notes });
+  }
+  saveEvents(evs);
+  closeEventModal();
+  renderEventsCalendar();
+  notify(_editingEventId ? 'Event updated.' : 'Event added.');
+}
+function deleteCurrentEvent() {
+  if (!_editingEventId) return;
+  if (!confirm('Delete this event?')) return;
+  const evs = loadEvents().filter(e => e.id !== _editingEventId);
+  saveEvents(evs);
+  closeEventModal();
+  renderEventsCalendar();
+  notify('Event deleted.');
+}
+
+// Close modal on overlay click
+document.getElementById('event-modal-overlay')?.addEventListener('click', function(e){
+  if(e.target===this) closeEventModal();
+});
 
 // Add ⌘K button to header on load
 window.addEventListener('load', () => {
