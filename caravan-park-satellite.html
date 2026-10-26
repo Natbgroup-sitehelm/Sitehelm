@@ -199,14 +199,15 @@
   .maint-job-card:hover { border-color:var(--accent);box-shadow:0 4px 16px rgba(0,0,0,0.15) }
   .maint-job-card:active { opacity:0.92 }
   .maint-card-stripe { width:5px;flex-shrink:0;align-self:stretch }
-  .maint-card-body { padding:13px 13px 0 11px;flex:1;min-width:0 }
+  .maint-card-body { padding:11px 0 11px 11px;flex:1;min-width:0;display:flex;align-items:flex-start;gap:8px }
+  .maint-card-info { flex:1;min-width:0 }
   .maint-card-header { display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap }
   .maint-card-loc { font-size:15px;font-weight:800;color:var(--text-primary) }
   .maint-status-pill { font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap }
   .maint-card-desc { font-size:13px;color:var(--text-primary);line-height:1.45;margin-bottom:8px }
-  .maint-card-meta { display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--text-muted);align-items:center;padding-bottom:10px }
-  .maint-quick-btns { display:flex;gap:6px;padding:10px 11px;border-top:1px solid var(--border-light);background:var(--bg);flex-wrap:wrap;margin:0 -11px }
-  .maint-qbtn { flex:1;min-width:72px;border:none;border-radius:8px;padding:10px 6px;font-size:11px;font-weight:700;cursor:pointer;transition:filter 0.15s;white-space:nowrap }
+  .maint-card-meta { display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--text-muted);align-items:center;padding-bottom:11px }
+  .maint-quick-btns { display:flex;flex-direction:column;gap:5px;padding:11px 10px 11px 0;flex-shrink:0 }
+  .maint-qbtn { flex:none;border:none;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;transition:filter 0.15s;white-space:nowrap }
   .maint-qbtn:active { filter:brightness(0.85) }
   /* Maintenance detail drawer */
   #maint-drawer-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:8500;display:none }
@@ -15082,25 +15083,27 @@ function renderMaintenanceBoard() {
     return `<div class="maint-job-card" onclick="openMaintDrawer('${job.id}')">
       <div class="maint-card-stripe" style="background:${priColor}"></div>
       <div class="maint-card-body">
-        <div class="maint-card-header">
-          <span style="font-size:20px">${cat.icon}</span>
-          <span class="maint-card-loc">${job.location}</span>
-          <span class="maint-status-pill" style="color:${st.color};background:${st.bg}">${st.label}</span>
-          ${job.priority==='urgent'?`<span style="font-size:11px;font-weight:800;color:${priColor};animation:pulse 1.4s infinite">🔴 URGENT</span>`
-           :job.priority==='high'?`<span style="font-size:11px;font-weight:700;color:${priColor}">🟠 High</span>`:''}
+        <div class="maint-card-info">
+          <div class="maint-card-header">
+            <span style="font-size:20px">${cat.icon}</span>
+            <span class="maint-card-loc">${job.location}</span>
+            <span class="maint-status-pill" style="color:${st.color};background:${st.bg}">${st.label}</span>
+            ${job.priority==='urgent'?`<span style="font-size:11px;font-weight:800;color:${priColor};animation:pulse 1.4s infinite">🔴 URGENT</span>`
+             :job.priority==='high'?`<span style="font-size:11px;font-weight:700;color:${priColor}">🟠 High</span>`:''}
+          </div>
+          <div class="maint-card-desc">${job.description}</div>
+          <div class="maint-card-meta">
+            <span>${cat.label}</span>
+            <span>·</span>
+            <span>${ago}</span>
+            ${job.reportedBy?`<span>· by <strong>${job.reportedBy}</strong></span>`:''}
+            ${assignedStaff
+              ?`<span style="color:var(--accent)">· 👤 ${assignedStaff.name}</span>`
+              :`<span style="color:#f9c74f">· ⚠️ Unassigned</span>`}
+          </div>
+          ${job.resolutionNotes?`<div style="padding:7px 9px;background:rgba(82,183,136,0.1);border-radius:7px;font-size:12px;color:#52B788;border-left:3px solid #52B788;margin-bottom:10px">📝 ${job.resolutionNotes}</div>`:''}
         </div>
-        <div class="maint-card-desc">${job.description}</div>
-        <div class="maint-card-meta">
-          <span>${cat.label}</span>
-          <span>·</span>
-          <span>${ago}</span>
-          ${job.reportedBy?`<span>· by <strong>${job.reportedBy}</strong></span>`:''}
-          ${assignedStaff
-            ?`<span style="color:var(--accent)">· 👤 ${assignedStaff.name}</span>`
-            :`<span style="color:#f9c74f">· ⚠️ Unassigned</span>`}
-        </div>
-        ${job.resolutionNotes?`<div style="padding:7px 9px;background:rgba(82,183,136,0.1);border-radius:7px;font-size:12px;color:#52B788;border-left:3px solid #52B788;margin-bottom:10px">📝 ${job.resolutionNotes}</div>`:''}
-        <div class="maint-quick-btns">${btns}
+        <div class="maint-quick-btns" onclick="event.stopPropagation()">${btns}
           <button class="maint-qbtn" style="background:var(--bg-hover);color:var(--text-muted);border:1px solid var(--border)"
             onclick="event.stopPropagation();openMaintDrawer('${job.id}')">Details ›</button>
         </div>
