@@ -28,11 +28,12 @@ body { font-family:'Segoe UI',system-ui,sans-serif; background:#0f1520; min-heig
 .job-card { background:#131d2e; border:1px solid #1e2d40; border-radius:14px; margin-bottom:10px; cursor:pointer; overflow:hidden; display:flex; transition:opacity 0.15s; }
 .job-card:active { opacity:0.75; }
 .job-stripe { width:5px; flex-shrink:0; align-self:stretch; }
-.job-body { padding:13px 13px 0 11px; flex:1; min-width:0; }
+.job-body { padding:11px 0 11px 11px; flex:1; min-width:0; display:flex; align-items:flex-start; gap:8px; }
+.job-info { flex:1; min-width:0; }
 .job-title { font-size:15px; font-weight:700; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.job-meta { font-size:11px; color:#7ab3f0; margin-bottom:10px; display:flex; gap:10px; flex-wrap:wrap; }
-.job-quick { display:flex; gap:6px; padding:10px 11px; border-top:1px solid #1e2d40; margin:0 -11px; flex-wrap:wrap; }
-.qbtn { flex:1; min-width:70px; border:none; border-radius:8px; padding:10px 6px; font-size:11px; font-weight:700; cursor:pointer; transition:opacity 0.15s; }
+.job-meta { font-size:11px; color:#7ab3f0; margin-bottom:0; display:flex; gap:10px; flex-wrap:wrap; }
+.job-quick { display:flex; flex-direction:column; gap:5px; padding:11px 10px 11px 0; flex-shrink:0; }
+.qbtn { flex:none; border:none; border-radius:8px; padding:7px 10px; font-size:11px; font-weight:700; cursor:pointer; transition:opacity 0.15s; white-space:nowrap; }
 .qbtn:active { opacity:0.7; }
 .status-badge { display:inline-block; padding:3px 8px; border-radius:6px; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.3px; }
 
@@ -277,15 +278,17 @@ function renderList() {
     <div class="job-card" onclick="openDetail('${job.id}')">
       <div class="job-stripe" style="background:${priColor}"></div>
       <div class="job-body">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:3px">
-          <div class="job-title">${esc(job.title)}</div>
-          <span class="status-badge" style="background:${st.bg};color:${st.color};border:1px solid ${st.color}44;flex-shrink:0">${st.icon} ${st.label}</span>
-        </div>
-        <div class="job-meta">
-          ${job.siteId ? `<span>📍 ${esc(job.siteId)}</span>` : ''}
-          ${job.category ? `<span>${catIcon(job.category)} ${cap(job.category)}</span>` : ''}
-          ${age ? `<span>⏱ ${age}</span>` : ''}
-          ${job.assignedTo ? `<span>👤 ${esc(staffName(job.assignedTo))}</span>` : ''}
+        <div class="job-info">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:3px">
+            <div class="job-title">${esc(job.title)}</div>
+            <span class="status-badge" style="background:${st.bg};color:${st.color};border:1px solid ${st.color}44;flex-shrink:0">${st.icon} ${st.label}</span>
+          </div>
+          <div class="job-meta">
+            ${job.siteId ? `<span>📍 ${esc(job.siteId)}</span>` : ''}
+            ${job.category ? `<span>${catIcon(job.category)} ${cap(job.category)}</span>` : ''}
+            ${age ? `<span>⏱ ${age}</span>` : ''}
+            ${job.assignedTo ? `<span>👤 ${esc(staffName(job.assignedTo))}</span>` : ''}
+          </div>
         </div>
         <div class="job-quick" onclick="event.stopPropagation()">
           ${job.status !== 'inprogress' ? `<button class="qbtn" style="background:#1c1100;color:#f59e0b" onclick="quickStatus('${job.id}','inprogress')">⚙️ Start</button>` : ''}
